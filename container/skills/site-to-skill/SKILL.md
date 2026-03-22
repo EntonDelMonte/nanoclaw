@@ -90,9 +90,9 @@ agent-browser eval "
 
 After crawling all pages, write a single Markdown file:
 
-**Output path:** `/workspace/extra/obsidian/MnemClaw/Skill Repo/web/<domain-slug>/skill.md`
+**Output path:** `/workspace/extra/obsidian/MnemClaw/Skill Repo/web/<domain-slug>.md`
 
-Example slug: `stripe-com`, `linear-app`, `vercel-com`
+Example: `stripe-com.md`, `linear-app.md`, `vercel-com.md` — placed directly in the `web/` folder, no subfolders.
 
 ---
 
@@ -241,6 +241,6 @@ Key Components: Brand identity, Navigation, Layout patterns, Component library, 
 - If sitemap is unavailable, use `agent-browser` to navigate from the homepage via the nav
 - Screenshots are for your analysis only — do not embed them in the output
 - Fill in `[unknown]` for anything you cannot determine — never guess colours or fonts
-- Save to `/workspace/extra/obsidian/MnemClaw/Skill Repo/web/<domain-slug>/skill.md`
-- Domain slug: replace dots and slashes with hyphens, e.g. `stripe.com` → `stripe-com`
+- Save to `/workspace/extra/obsidian/MnemClaw/Skill Repo/web/<domain-slug>.md` — flat file, no subfolder
+- Domain slug: replace dots and slashes with hyphens, e.g. `stripe.com` → `stripe-com.md`
 - After saving, send a brief summary message: site name, pages crawled, key design notes
