@@ -29,8 +29,17 @@ Single Node.js process with skill-based channel system. Channels (WhatsApp, Tele
 | `/customize` | Adding channels, integrations, changing behavior |
 | `/debug` | Container issues, logs, troubleshooting |
 | `/update-nanoclaw` | Bring upstream NanoClaw updates into a customized install |
+| `/update-skills` | Check for and install new or updated skills |
 | `/qodo-pr-resolver` | Fetch and fix Qodo PR review issues interactively or in batch |
 | `/get-qodo-rules` | Load org- and repo-level coding rules from Qodo before code tasks |
+
+## Local Skills Source
+
+**Always check `/Users/oflorian/Documents/Github/_skills` before going to the internet or upstream git.**
+
+- `agent-skills-hub/skills/*/SKILL.md` — primary; standard NanoClaw SKILL.md format (700+ skills)
+- `agency-agents/**/*.md` — agent persona prompts by domain
+- `www-impeccable/` — design and web skills
 
 ## Development
 

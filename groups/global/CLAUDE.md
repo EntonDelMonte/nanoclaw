@@ -47,6 +47,20 @@ When you learn something important:
 - Split files larger than 500 lines into folders
 - Keep an index in your memory for the files you create
 
+## Authority Table
+
+Before taking any significant action, consult `/workspace/group/authority-table.md`.
+
+Decisions are organised by project phase (Pre-Manifest → Manifest → Alpha/Beta → Launch → Scaling → Maintenance) plus Trading.
+
+- 🔴 **Always requires user approval** — stop and ask via AlphaBot before proceeding
+- 🟡 **Proceed then confirm** — act, then immediately notify the user
+- 🟢 **Autonomous** — act freely, no interruption needed
+
+When in doubt, treat the action as 🔴 and ask. Subagents surface decisions to AlphaBot — never contact the user directly for approvals.
+
+---
+
 ## Message Formatting
 
 NEVER use markdown. Only use WhatsApp/Telegram formatting:

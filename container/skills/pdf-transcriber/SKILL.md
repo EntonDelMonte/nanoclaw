@@ -84,6 +84,7 @@ sed -E \
   -e 's/\xc2\xad//g' \
   -e 's/-[[:space:]]*\n([a-z])/\1/g' \
   -e 's/ﬁ/fi/g; s/ﬂ/fl/g; s/ﬀ/ff/g' \
+  -e 's/^[[:blank:]]+//' \
   -e 's/[[:blank:]]+$//' \
   -e '/^$/N;/^\n$/d' \
   /tmp/raw_extract.txt

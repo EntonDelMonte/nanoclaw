@@ -1,7 +1,10 @@
+import fs from 'fs';
 import https from 'https';
+import path from 'path';
+
 import { Api, Bot } from 'grammy';
 
-import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
+import { ASSISTANT_NAME, GROUPS_DIR, TRIGGER_PATTERN } from '../config.js';
 import { readEnvFile } from '../env.js';
 import { logger } from '../logger.js';
 import { registerChannel, ChannelOpts } from './registry.js';
@@ -11,6 +14,21 @@ import {
   OnInboundMessage,
   RegisteredGroup,
 } from '../types.js';
+
+function downloadFile(url: string, dest: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    https
+      .get(url, (res) => {
+        res.pipe(file);
+        file.on('finish', () => file.close(() => resolve()));
+      })
+      .on('error', (err) => {
+        fs.unlink(dest, () => {});
+        reject(err);
+      });
+  });
+}
 
 export interface TelegramChannelOpts {
   onMessage: OnInboundMessage;
@@ -203,8 +221,38 @@ export class TelegramChannel implements Channel {
     this.bot.on('message:video', (ctx) => storeNonText(ctx, '[Video]'));
     this.bot.on('message:voice', (ctx) => storeNonText(ctx, '[Voice message]'));
     this.bot.on('message:audio', (ctx) => storeNonText(ctx, '[Audio]'));
-    this.bot.on('message:document', (ctx) => {
-      const name = ctx.message.document?.file_name || 'file';
+    this.bot.on('message:document', async (ctx) => {
+      const doc = ctx.message.document;
+      const name = doc?.file_name || 'file';
+      const mime = doc?.mime_type || '';
+      const chatJid = `tg:${ctx.chat.id}`;
+      const group = this.opts.registeredGroups()[chatJid];
+
+      if (mime === 'application/pdf' && group && doc?.file_id) {
+        try {
+          const file = await this.bot!.api.getFile(doc.file_id);
+          if (file.file_path) {
+            const url = `https://api.telegram.org/file/bot${this.botToken}/${file.file_path}`;
+            const attachmentsDir = path.join(
+              GROUPS_DIR,
+              group.folder,
+              'attachments',
+            );
+            fs.mkdirSync(attachmentsDir, { recursive: true });
+            const localPath = path.join(attachmentsDir, name);
+            await downloadFile(url, localPath);
+            logger.info({ chatJid, name }, 'Downloaded PDF attachment');
+            storeNonText(
+              ctx,
+              `[PDF attached: /workspace/group/attachments/${name}. Use the pdf-reader skill to read it.]`,
+            );
+            return;
+          }
+        } catch (err) {
+          logger.error({ err, name }, 'Failed to download PDF attachment');
+        }
+      }
+
       storeNonText(ctx, `[Document: ${name}]`);
     });
     this.bot.on('message:sticker', (ctx) => {
