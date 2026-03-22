@@ -105,6 +105,8 @@ domain: "<domain>"
 url: "<homepage URL>"
 crawled: <YYYY-MM-DD>
 pages_analysed: <N>
+maturity: reference
+status: Active design reference
 tags:
   - web-reference
   - front-end
@@ -219,6 +221,15 @@ description: "Design and content reference for <Site Name> — <one line on what
 - [Key insight 1 — e.g. "Use generous white space with a single strong accent colour"]
 - [Key insight 2 — e.g. "Headlines are always verb-first and benefit-led"]
 - [Key insight 3 — e.g. "Cards have a subtle lift on hover, 8px radius, soft shadow"]
+
+---
+
+## JTAG Annotation
+Type: Web Design Reference
+Scope: <industry / sector of the site>
+Maturity: Reference — crawled <N> pages, <date>
+Cross-links: <[[related skill repo notes or project notes]]>
+Key Components: Brand identity, Navigation, Layout patterns, Component library, Copy conventions, Technical stack
 ```
 
 ---

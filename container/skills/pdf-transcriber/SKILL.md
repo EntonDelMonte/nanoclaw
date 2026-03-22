@@ -98,9 +98,12 @@ Save to: `/workspace/extra/obsidian/PDF Transcripts/<SlugifiedTitle>.md`
 ```markdown
 ---
 title: "Full Document Title"
+author: "<first author surname, or organisation/company/institution if no individual author>"
 source: "<original filename or URL>"
 pages: <N>
 extracted: <YYYY-MM-DD>
+maturity: transcript
+status: archived
 tags:
   - pdf-transcript
   - <topic tags>
@@ -124,12 +127,22 @@ description: "One-sentence summary of the document."
 <page 2 text>
 
 ...
+
+---
+
+## JTAG Annotation
+Type: PDF Transcript
+Scope: <subject area or field>
+Maturity: Transcript — algorithmically extracted, not manually reviewed
+Cross-links: <[[related vault notes if known]]>
+Key Components: <main topics, arguments, or sections found in the document>
 ```
 
 ---
 
 ## Rules
 
+- Always include an `author` field in the YAML — use the first/primary author's surname, or the group, institution, or company name if there is no individual author
 - Always use the `<!-- page N -->` HTML comment marker before each page's content — never omit page numbers
 - Preserve section headings if clearly identifiable from capitalisation or whitespace patterns
 - Do **not** silently fix `1`/`l` or `0`/`O` ambiguities — leave a `[?]` flag inline if uncertain

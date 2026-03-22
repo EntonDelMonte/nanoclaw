@@ -117,6 +117,8 @@ video_id: "<11-char ID>"
 published: "<YYYY-MM-DD>"
 duration: "<HH:MM:SS or MM:SS>"
 extracted: "<YYYY-MM-DD>"
+maturity: transcript
+status: archived
 tags:
   - youtube-transcript
   - <topic tags>
@@ -130,6 +132,15 @@ description: "<One-sentence summary from video description or first lines of tra
 ---
 
 <cleaned transcript text with paragraph breaks>
+
+---
+
+## JTAG Annotation
+Type: YouTube Transcript
+Scope: <subject area or field>
+Maturity: Transcript — auto-generated captions, cleaned
+Cross-links: <[[related vault notes if known]]>
+Key Components: <main topics or themes covered in the video>
 ```
 
 ---
