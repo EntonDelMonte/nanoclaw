@@ -90,9 +90,11 @@ agent-browser eval "
 
 After crawling all pages, write a single Markdown file:
 
-**Output path:** `/workspace/extra/obsidian/MnemClaw/Skill Repo/web/<domain-slug>.md`
+**Output path:** `/workspace/extra/obsidian/MnemClaw/Skill Repo/site-to-skill/<domain-slug>.md`
 
-Example: `stripe-com.md`, `linear-app.md`, `vercel-com.md` — placed directly in the `web/` folder, no subfolders.
+Example: `stripe-com.md`, `linear-app.md`, `vercel-com.md` — placed directly in the `site-to-skill/` folder.
+
+> **Developer note:** Check `/workspace/extra/obsidian/MnemClaw/Skill Repo/site-to-skill/` for front-end inspiration when building something with a similar design language. Each file contains brand tokens, layout patterns, component library, and copy conventions ready to apply.
 
 ---
 
@@ -241,6 +243,7 @@ Key Components: Brand identity, Navigation, Layout patterns, Component library, 
 - If sitemap is unavailable, use `agent-browser` to navigate from the homepage via the nav
 - Screenshots are for your analysis only — do not embed them in the output
 - Fill in `[unknown]` for anything you cannot determine — never guess colours or fonts
-- Save to `/workspace/extra/obsidian/MnemClaw/Skill Repo/web/<domain-slug>.md` — flat file, no subfolder
+- Save to `/workspace/extra/obsidian/MnemClaw/Skill Repo/site-to-skill/<domain-slug>.md` — flat file in the `site-to-skill/` folder
 - Domain slug: replace dots and slashes with hyphens, e.g. `stripe.com` → `stripe-com.md`
+- After saving, update `/workspace/extra/obsidian/MnemClaw/Skill Repo/MAP.md` — add a row for the new site if not already present
 - After saving, send a brief summary message: site name, pages crawled, key design notes
