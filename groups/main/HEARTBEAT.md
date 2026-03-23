@@ -26,22 +26,6 @@ agents:
     model: claude-haiku
     status: idle
     last_task: ~
-  strategist:
-    model: claude-sonnet
-    status: idle
-    last_task: ~
-  analyst:
-    model: claude-haiku
-    status: idle
-    last_task: ~
-  community_manager:
-    model: claude-haiku
-    status: idle
-    last_task: ~
-  trader:
-    model: claude-sonnet
-    status: idle
-    last_task: ~
   local_coder:
     model: ollama/qwen3.5:9b
     status: idle
@@ -73,7 +57,7 @@ pending:
 notes: |
   2026-03-22:
   - Agent registry restructured: flat agents/ directory under groups/main/
-  - 8 swarm agents defined: Researcher, Developer, Release Manager, Marketer, Strategist, Analyst, Community Manager, Trader
+  - Swarm agents: Researcher, Lead Developer, Local Coder, Release Manager, Marketer, Skill Link, Tribe Hub, Growth Agent
   - groups/telegram_main merged into groups/main — single source of truth
   - Project files mapped to MnemClaw/projects/<ProjectName>/ in vault
   - skills-library mount added: /workspace/extra/skills-library (read-only)

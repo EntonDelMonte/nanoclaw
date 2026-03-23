@@ -133,7 +133,7 @@ All agent role definitions live in `/workspace/group/agents/`. Before spawning a
 | `release-manager.md` | Versioning, changelogs, deploys | claude-haiku-4-5-20251001 |
 | `marketer.md` | Copywriting, campaigns, positioning | claude-haiku-4-5-20251001 |
 | `tribe-hub.md` | Social presence, sentiment analysis, Emotional Detection | mistral-large-3 (Mammouth) → claude-sonnet-4-6 → qwen3.5:9b |
-| `growth-agent.md` | Analytics, ads, market forecasting, Mirofish simulations | minimax-m2.1:cloud (Ollama) → qwen-plus (needs QWEN_API_KEY) → qwen3.5:9b |
+| `growth-agent.md` | Analytics, ads, Mautic marketing automation, market forecasting, Mirofish simulations | minimax-m2.1:cloud → deepseek-r1-0528 (simulations) → sonar-deep-research (market intel) → qwen3.5:9b |
 | `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | deepseek-v3.1-terminus → claude-sonnet-4-6 → qwen3.5:9b |
 
 Spawn agents in parallel when tasks are independent.
