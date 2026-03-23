@@ -12,9 +12,16 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 
 | Situation | Model |
 |-----------|-------|
-| Primary — skill authoring, integration research, code generation | `minimax-m2:cloud` via `mcp__ollama__ollama_generate` |
-| Complex reasoning, architecture decisions, edge case analysis | Claude 3.7 Sonnet (reasoning mode) |
+| Primary — skill authoring, integration research, code generation | `deepseek-v3.1-terminus` via Mammouth API |
+| Complex reasoning, architecture decisions, edge case analysis | Claude 4.6 Sonnet (Agent SDK) |
 | Fallback — lightweight generation when above are unavailable | `qwen3.5:9b` via `mcp__ollama__ollama_generate` |
+
+Use the Mammouth OpenAI-compatible API for the primary model:
+```
+base_url: https://api.mammouth.ai/v1
+api_key: $MAMMOUTH_API_KEY
+model: deepseek-v3.1-terminus
+```
 
 ## Responsibilities
 

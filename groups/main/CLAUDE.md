@@ -42,7 +42,7 @@ Full naming conventions and agent responsibilities are defined in `/workspace/gr
 ```
 MnemClaw/projects/<project-folder-name>/
 ├── <TLA>-manifest.md  ← product manifest (Researcher)
-├── <TLA>-plan.md      ← phased project plan (Researcher creates, Developer updates)
+├── <TLA>-plan.md      ← phased project plan (Researcher creates, Lead Developer updates)
 ├── research/          ← background research and references (Researcher)
 ├── strategy/          ← business model, roadmap, GTM (Strategist)
 ├── marketing/         ← copy, campaigns, positioning (Marketer)
@@ -85,7 +85,7 @@ When triggered by the heartbeat schedule, read HEARTBEAT.md and send a status up
 *Swarm Agents*
 • Dan (haiku/sonnet) — <last_task>
 • Researcher (haiku) — <status> | <last_task>
-• Developer (sonnet) — <status> | <last_task>
+• Lead Developer (qwen3-coder:480b/sonnet) — <status> | <last_task>
 • Release Manager (haiku) — <status> | <last_task>
 • Marketer (haiku) — <status> | <last_task>
 • Strategist (sonnet) — <status> | <last_task>
@@ -131,14 +131,14 @@ All agent role definitions live in `/workspace/group/agents/`. Before spawning a
 | File | Role | Model |
 |------|------|-------|
 | `researcher.md` | Research, vault, knowledge synthesis | claude-haiku-4-5-20251001 |
-| `developer.md` | Code implementation, GitHub, Ollama worker | claude-sonnet-4-6 |
+| `lead-developer.md` | Code implementation, GitHub, architecture | qwen3-coder-plus (Mammouth) → claude-sonnet-4-6 → qwen3.5:9b (32k limit — hold large tasks if quota exhausted) |
 | `release-manager.md` | Versioning, changelogs, deploys | claude-haiku-4-5-20251001 |
 | `marketer.md` | Copywriting, campaigns, positioning | claude-haiku-4-5-20251001 |
 | `strategist.md` | OSS vs freemium vs closed, roadmap | claude-sonnet-4-6 |
 | `analyst.md` | Metrics, analytics, reporting | claude-haiku-4-5-20251001 |
 | `community-manager.md` | Community engagement, support | claude-haiku-4-5-20251001 |
 | `trader.md` | Trading strategy, portfolio, signals | claude-sonnet-4-6 |
-| `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | minimax-m2:cloud → claude-sonnet-4-6 → qwen3.5:9b |
+| `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | deepseek-v3.1-terminus → claude-sonnet-4-6 → qwen3.5:9b |
 
 Spawn agents in parallel when tasks are independent.
 
@@ -165,7 +165,7 @@ You are responsible for identifying when a task requires a capability not covere
 3. **If nothing local matches** — the delegated agent may search the web as a last resort
 4. **Never create skills yourself** — delegate:
    - Knowledge/workflow/research skills → **Researcher**
-   - TypeScript host code or MCP integrations → **Developer**
+   - TypeScript host code or MCP integrations → **Lead Developer**
    - Both → spawn in parallel
 
 ```bash
