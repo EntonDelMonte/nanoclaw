@@ -23,6 +23,10 @@ api_key: $MAMMOUTH_API_KEY
 model: deepseek-v3.1-terminus
 ```
 
+## Boundary
+
+> **Skill Link authors new skills.** Installing or updating existing skills from the local library or upstream git is handled by the `/update-skills` host skill (run by the user in Claude Code, not by this agent).
+
 ## Responsibilities
 
 - Author and maintain `SKILL.md` files for new integrations and capabilities
@@ -36,7 +40,7 @@ Before creating or modifying any project file, read `/workspace/group/DEFAULTS.m
 
 ## Where to Look — In Order
 
-Before writing a new skill from scratch or going online, search these local sources first:
+Before writing a new skill from scratch or going online, exhaust all local sources first:
 
 ### 1. NanoClaw container skills (installed, active)
 ```
@@ -50,7 +54,22 @@ Each skill has a `SKILL.md` — read these to understand format, tool declaratio
 ```
 Richer skills with full implementation. Use as reference for structure and conventions.
 
-### 3. MnemClaw Skill Repo (curated vault collection)
+### 3. Local skills library (all subfolders)
+Search every subfolder of `/workspace/extra/skills-library/` before going online:
+
+```bash
+# Search all subfolders for relevant skills by keyword
+find /workspace/extra/skills-library -name "*.md" | xargs grep -li "<keyword>" 2>/dev/null
+```
+
+| Subfolder | Contents |
+|-----------|----------|
+| `agent-skills-hub/skills/` | 700+ standard SKILL.md format skills |
+| `agency-agents/` | Agent persona prompts by domain |
+| `www-impeccable/` | Design and web skills |
+| `godogen/` | Game dev and generative skills |
+
+### 4. MnemClaw Skill Repo (curated vault collection)
 ```
 /workspace/extra/obsidian/MnemClaw/Skill Repo/
 ```
@@ -58,8 +77,8 @@ Richer skills with full implementation. Use as reference for structure and conve
 - `Generated/` — auto-generated skill reference docs
 - `site-to-skill/` — site-extracted patterns
 
-### 4. Web search (last resort)
-Only if nothing local matches. Use WebSearch + WebFetch for:
+### 5. Web search (last resort)
+Only if nothing in any local source matches. Use WebSearch + WebFetch for:
 - Official docs for the target technology
 - GitHub repos for reference implementations
 - Existing open-source skill formats

@@ -50,7 +50,29 @@ Write code to GitHub repos. The one exception: keep `plan.md` up to date in the 
 3. Create or clone the GitHub repo, set up structure, initial commit
 4. Break each phase into small focused components
 5. Delegate coding to Local Coder (see below)
-6. Integrate, test, push
+6. **Run tests before marking anything done** (see Testing section below)
+7. Integrate, test, push
+
+## Testing (mandatory before task completion)
+
+Testing is part of the definition of done — never mark a task or phase complete without running tests.
+
+### Unit Tests (component level) → delegate to Local Coder
+- Use the `unit-testing` container skill (`/workspace/extra/nanoclaw/container/skills/unit-testing/SKILL.md`)
+- Local Coder writes and runs Vitest + React Testing Library tests per component
+- Good fit: props, rendering, state, user events — self-contained, fits in 32k context
+- Send a brief Telegram status after each test run: `mcp__nanoclaw__send_message(sender: "Lead Developer", text: "🧪 Unit tests: <component> — ✅ X passed / ❌ Y failed")`
+
+### Web Self-Tests (E2E / integration) → Lead Developer runs directly
+- Use the `web-self-testing` container skill (`/workspace/extra/nanoclaw/container/skills/web-self-testing/SKILL.md`)
+- Run Playwright headless tests against the built app before each push
+- Always use `--no-sandbox --disable-gpu` flags (container environment)
+- Send a brief Telegram status: `mcp__nanoclaw__send_message(sender: "Lead Developer", text: "🌐 E2E tests: <scope> — ✅ X passed / ❌ Y failed")`
+
+### Test failure protocol
+- 1-2 failures → fix directly, re-run
+- 3+ failures → enter Debugging Mode (see below), do not push
+- Flaky/environment failures → note in `plan.md` blocker field, notify user
 
 ## Local Coder (Ollama qwen3.5:9b)
 

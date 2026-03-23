@@ -5,21 +5,24 @@ description: Check for and apply updates to installed skill branches from upstre
 
 # About
 
-Skills are distributed as git branches (`skill/*`) or local SKILL.md files. When you install a skill from git, you merge its branch into your repo. Local skills are copied directly to `.claude/skills/`.
+Skills are distributed as git branches (`skill/*`). When you install a skill, you merge its branch into your repo. This skill checks upstream for newer commits on those skill branches and helps you update.
 
 Run `/update-skills` in Claude Code.
+
+> **Note**: This skill manages *installing and updating* skills from the local library or upstream git.
+> For *authoring new skills* during agent tasks, Dan uses the Skill Link swarm agent instead.
 
 ## How it works
 
 **Preflight**: checks for clean working tree and upstream remote.
 
-**Local detection**: scans `/Users/oflorian/Documents/Github/_skills` for skills not yet installed. This is checked FIRST, before going to the internet.
+**Local library scan**: searches all subfolders of `/Users/oflorian/Documents/Github/_skills/` for skills not yet installed. This is checked FIRST, before going to the internet.
 
-**Remote detection**: fetches upstream, lists all `upstream/skill/*` branches, determines which ones you've previously merged (via merge-base), and checks if any have new commits.
+**Detection**: fetches upstream, lists all `upstream/skill/*` branches, determines which ones you've previously merged (via merge-base), and checks if any have new commits.
 
-**Selection**: presents local new skills first, then remote updates. You pick which to install or update.
+**Selection**: presents a list of skills with available updates. You pick which to update.
 
-**Install/Update**: copies local skills to `.claude/skills/` or merges git skill branches, resolves conflicts, then validates with build + test.
+**Update**: merges each selected skill branch, resolves conflicts if any, then validates with build + test.
 
 ---
 
@@ -52,15 +55,24 @@ Fetch:
 
 # Step 0.5: Scan local skills library
 
-Before fetching from upstream, scan `/Users/oflorian/Documents/Github/_skills/agent-skills-hub/skills` for skills not yet installed in `.claude/skills/`.
+Before fetching from upstream, search all subfolders of `/Users/oflorian/Documents/Github/_skills/` for SKILL.md files not yet installed in `.claude/skills/`:
 
-For each skill directory found:
-- If `.claude/skills/<name>/` does not exist → **available to install**
-- If it exists → check if local version differs (content diff)
-
-Install by copying:
 ```bash
-cp -r "/Users/oflorian/Documents/Github/_skills/agent-skills-hub/skills/<name>" .claude/skills/<name>
+find /Users/oflorian/Documents/Github/_skills -name "SKILL.md" | while read f; do
+  name=$(basename $(dirname "$f"))
+  if [ ! -d ".claude/skills/$name" ]; then
+    echo "available: $name ($f)"
+  fi
+done
+```
+
+For skills found:
+- If `.claude/skills/<name>/` does not exist → **available to install**
+- If it exists → skip (already installed)
+
+Install by copying the skill's parent directory:
+```bash
+cp -r "$(dirname "$f")" .claude/skills/<name>
 ```
 
 Present available local skills to the user with `AskUserQuestion` (multiSelect) before proceeding to the upstream remote check.

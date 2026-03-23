@@ -44,9 +44,9 @@ MnemClaw/projects/<project-folder-name>/
 ├── <TLA>-manifest.md  ← product manifest (Researcher)
 ├── <TLA>-plan.md      ← phased project plan (Researcher creates, Lead Developer updates)
 ├── research/          ← background research and references (Researcher)
-├── strategy/          ← business model, roadmap, GTM (Strategist)
+├── strategy/          ← business model, roadmap, GTM (Researcher)
 ├── marketing/         ← copy, campaigns, positioning (Marketer)
-├── analytics/         ← metrics reports (Analyst)
+├── analytics/         ← metrics reports (Researcher)
 └── community/         ← issue triage, contributor notes (Community Manager)
 ```
 
@@ -88,10 +88,8 @@ When triggered by the heartbeat schedule, read HEARTBEAT.md and send a status up
 • Lead Developer (qwen3-coder:480b/sonnet) — <status> | <last_task>
 • Release Manager (haiku) — <status> | <last_task>
 • Marketer (haiku) — <status> | <last_task>
-• Strategist (sonnet) — <status> | <last_task>
-• Analyst (haiku) — <status> | <last_task>
-• Community Manager (haiku) — <status> | <last_task>
-• Trader (sonnet) — <status> | <last_task>
+• Tribe Hub (mistral-large-3) — <status> | <last_task>
+• Growth Agent (minimax-m2.1) — <status> | <last_task>
 
 *Pending*
 • <blocked task and blocker if any>
@@ -130,14 +128,12 @@ All agent role definitions live in `/workspace/group/agents/`. Before spawning a
 
 | File | Role | Model |
 |------|------|-------|
-| `researcher.md` | Research, vault, knowledge synthesis | claude-haiku-4-5-20251001 |
+| `researcher.md` | Research, vault, knowledge synthesis, strategy, analytics | deepseek-v3.1-terminus (Mammouth) → claude-sonnet-4-6 → qwen3.5:9b |
 | `lead-developer.md` | Code implementation, GitHub, architecture | qwen3-coder-plus (Mammouth) → claude-sonnet-4-6 → qwen3.5:9b (32k limit — hold large tasks if quota exhausted) |
 | `release-manager.md` | Versioning, changelogs, deploys | claude-haiku-4-5-20251001 |
 | `marketer.md` | Copywriting, campaigns, positioning | claude-haiku-4-5-20251001 |
-| `strategist.md` | OSS vs freemium vs closed, roadmap | claude-sonnet-4-6 |
-| `analyst.md` | Metrics, analytics, reporting | claude-haiku-4-5-20251001 |
-| `community-manager.md` | Community engagement, support | claude-haiku-4-5-20251001 |
-| `trader.md` | Trading strategy, portfolio, signals | claude-sonnet-4-6 |
+| `tribe-hub.md` | Social presence, sentiment analysis, Emotional Detection | mistral-large-3 (Mammouth) → claude-sonnet-4-6 → qwen3.5:9b |
+| `growth-agent.md` | Analytics, ads, market forecasting, Mirofish simulations | minimax-m2.1:cloud (Ollama) → qwen-plus (needs QWEN_API_KEY) → qwen3.5:9b |
 | `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | deepseek-v3.1-terminus → claude-sonnet-4-6 → qwen3.5:9b |
 
 Spawn agents in parallel when tasks are independent.
