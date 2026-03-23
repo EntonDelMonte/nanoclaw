@@ -138,6 +138,7 @@ All agent role definitions live in `/workspace/group/agents/`. Before spawning a
 | `analyst.md` | Metrics, analytics, reporting | claude-haiku-4-5-20251001 |
 | `community-manager.md` | Community engagement, support | claude-haiku-4-5-20251001 |
 | `trader.md` | Trading strategy, portfolio, signals | claude-sonnet-4-6 |
+| `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | minimax-m2:cloud → claude-sonnet-4-6 → qwen3.5:9b |
 
 Spawn agents in parallel when tasks are independent.
 

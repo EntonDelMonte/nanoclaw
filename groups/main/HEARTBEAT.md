@@ -46,6 +46,10 @@ agents:
     model: ollama/qwen3.5:9b
     status: idle
     last_task: ~
+  skill_link:
+    model: minimax-m2:cloud (primary) / claude-sonnet-4-6 / qwen3.5:9b (fallback)
+    status: idle
+    last_task: ~
 
 projects:
   - name: ArtDB
