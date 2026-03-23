@@ -119,6 +119,18 @@ Subagents surface decisions to AlphaBot, who relays them to the user — never b
 
 ---
 
+## Skill Development (Cross-phase)
+
+| Decision | 🔴/🟡/🟢 | Owner → asks |
+|---|---|---|
+| Creating a new `SKILL.md` in `container/skills/` | 🟡 | Skill Link → notifies user after |
+| Updating an existing `SKILL.md` | 🟡 | Skill Link → notifies user after |
+| Deleting or deprecating a skill | 🔴 | Skill Link → AlphaBot |
+| Promoting a skill candidate from inbox to active skill | 🟡 | Skill Link → notifies user after |
+| Authoring skills, searching local sources, testing commands | 🟢 | Skill Link |
+
+---
+
 ## Trading (Cross-phase)
 
 | Decision | 🔴/🟡/🟢 | Owner → asks |
@@ -139,7 +151,7 @@ Subagents surface decisions to AlphaBot, who relays them to the user — never b
 | Updating HEARTBEAT.md and authority-table reads |
 | Analytics, generating reports, reading metrics |
 | Creating or updating NanoClaw scheduled tasks |
-| Writing new NanoClaw skills (notify after) |
+| Writing new NanoClaw skills — Skill Link notifies user immediately after creation or update |
 
 ---
 

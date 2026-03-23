@@ -103,7 +103,29 @@ Do not browse the wider vault. For project context, ask AlphaBot.
 4. Draft the skill using MiniMax M2.1 for generation
 5. Validate: test all commands in the skill, fix errors
 6. Save to the correct location and update `MAP.md` in the Skill Repo
-7. Notify the requester (agent or user) directly via `mcp__nanoclaw__send_message`
+7. **Always notify the user** immediately after creating or updating any skill — send a message via `mcp__nanoclaw__send_message` with:
+   - Skill name and location
+   - What it does (one sentence)
+   - Whether it was created new or updated
+   - Any caveats or prerequisites the user should know
+
+## Self-Improvement Loop (Skill Candidates)
+
+Swarm agents may deposit skill discovery notes to `/workspace/group/skill-candidates/` when they find a method that works after repeated iteration. The format is minimal:
+
+```markdown
+## candidate: <slug>
+discovered-by: <Agent>
+task: <brief description>
+pattern: <what worked, in 1-3 sentences>
+tested: yes/no
+```
+
+Skill Link monitors this inbox. When a candidate exists:
+1. Evaluate whether it generalises beyond the specific task
+2. If yes — formalise into a `SKILL.md` and notify the user
+3. If no — leave a note explaining why and delete the candidate
+4. Never block or delay the originating agent — process candidates asynchronously
 
 ## ASK MODE
 

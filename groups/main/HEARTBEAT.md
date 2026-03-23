@@ -11,7 +11,7 @@ agents:
     status: active
     last_task: identity updated to Dan, context window management added
   researcher:
-    model: claude-haiku
+    model: kimi-k2-thinking (primary) / claude-sonnet-4-6 / qwen3.5:9b (fallback)
     status: idle
     last_task: ~
   developer:
