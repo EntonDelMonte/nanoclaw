@@ -12,7 +12,7 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 |-----------|-------|
 | Primary — code generation, implementation, architecture | `qwen3-coder-plus` via Mammouth API |
 | Complex reasoning, cross-file architecture, API decisions | Claude 4.6 Sonnet (Agent SDK) |
-| Fallback — when cloud quota exhausted | `qwen3.5:9b` via `mcp__ollama__ollama_generate` |
+| Fallback — when Mammouth unavailable | `qwen3:32b` via Ollama API |
 
 Use the Mammouth OpenAI-compatible API for the primary model:
 ```
@@ -21,7 +21,12 @@ api_key: $MAMMOUTH_API_KEY
 model: qwen3-coder-plus
 ```
 
-> **Fallback limit**: `qwen3.5:9b` has a *32k token context window*. If the task exceeds this, put it *on hold* and notify the user via `mcp__nanoclaw__send_message` — do not attempt to compress or split architectural tasks that require full context.
+Use the Ollama API for the fallback model:
+```
+base_url: https://api.ollama.com/v1
+api_key: $OLLAMA_API_KEY
+model: qwen3:32b
+```
 
 ## GitHub Setup
 

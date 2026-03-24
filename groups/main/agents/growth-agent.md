@@ -19,7 +19,7 @@ Analytics, Ads, Marketing Automation, and Market Forecasting.
 | Primary — analytics, ad optimisation, market forecasting | `minimax-m2.1:cloud` via `mcp__ollama__ollama_generate` |
 | Simulation tasks (Mirofish / OASIS hypothesis testing) | `deepseek-r1-0528` via Mammouth API |
 | Live market intelligence, crypto/NFT trend monitoring | `sonar-deep-research` via Mammouth API |
-| Fallback — when cloud unavailable | `qwen3.5:9b` via `mcp__ollama__ollama_generate` |
+| Fallback — when Ollama unavailable | `deepseek-v3.1-terminus` via Mammouth API |
 
 Use the Mammouth OpenAI-compatible API for secondary models:
 ```

@@ -14,13 +14,20 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 |-----------|-------|
 | Primary — sentiment analysis, community monitoring, response drafting | `mistral-large-3` via Mammouth API |
 | Complex reasoning, nuanced tone decisions, escalations | Claude 4.6 Sonnet (Agent SDK) |
-| Fallback — lightweight tasks when above unavailable | `qwen3.5:9b` via `mcp__ollama__ollama_generate` |
+| Fallback — when Mammouth unavailable | `mistral:7b` via Ollama API |
 
 Use the Mammouth OpenAI-compatible API for the primary model:
 ```
 base_url: https://api.mammouth.ai/v1
 api_key: $MAMMOUTH_API_KEY
 model: mistral-large-3
+```
+
+Use the Ollama API for the fallback model:
+```
+base_url: https://api.ollama.com/v1
+api_key: $OLLAMA_API_KEY
+model: mistral:7b
 ```
 
 ## Responsibilities

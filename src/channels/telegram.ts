@@ -74,12 +74,17 @@ export async function sendPoolMessage(
     senderBotMap.set(key, idx);
   }
 
-  // Rename the pool bot if it's currently owned by a different sender
-  if (poolCurrentOwner[idx] !== sender) {
+  // Rename the pool bot if it's currently owned by a different sender.
+  // setMyName is rate-limited by Telegram (~once per 10 min per bot), so
+  // track whether rename succeeded. If it failed, prepend sender name as a
+  // bold header so identity is always visible regardless of rename status.
+  let renameSucceeded = poolCurrentOwner[idx] === sender;
+  if (!renameSucceeded) {
     try {
       await poolApis[idx].setMyName(sender);
       await new Promise((r) => setTimeout(r, 2000));
       poolCurrentOwner[idx] = sender;
+      renameSucceeded = true;
       logger.info(
         { sender, groupFolder, poolIndex: idx },
         'Pool bot assigned and renamed',
@@ -87,20 +92,25 @@ export async function sendPoolMessage(
     } catch (err) {
       logger.warn(
         { sender, err },
-        'Failed to rename pool bot (sending anyway)',
+        'Failed to rename pool bot — prepending sender header',
       );
     }
   }
+
+  // Prepend bold sender header when bot rename didn't take effect
+  const outText = renameSucceeded ? text : `*${sender}*\n${text}`;
 
   const api = poolApis[idx];
   const numericId = chatId.replace(/^tg:/, '');
   const MAX_LENGTH = 4096;
   try {
-    if (text.length <= MAX_LENGTH) {
-      await api.sendMessage(numericId, text);
+    if (outText.length <= MAX_LENGTH) {
+      await api.sendMessage(numericId, outText, { parse_mode: 'Markdown' });
     } else {
-      for (let i = 0; i < text.length; i += MAX_LENGTH) {
-        await api.sendMessage(numericId, text.slice(i, i + MAX_LENGTH));
+      for (let i = 0; i < outText.length; i += MAX_LENGTH) {
+        await api.sendMessage(numericId, outText.slice(i, i + MAX_LENGTH), {
+          parse_mode: 'Markdown',
+        });
       }
     }
     logger.info(
