@@ -128,8 +128,11 @@ Do not browse the wider vault. For project context, ask AlphaBot.
 3. If a matching skill exists locally — adapt it; don't rebuild from scratch
 4. Draft the skill using MiniMax M2.1 for generation
 5. Validate: test all commands in the skill, fix errors
-6. Save to the correct location and update `MAP.md` in the Skill Repo
-7. **Always notify the user** immediately after creating or updating any skill — send a message via `mcp__nanoclaw__send_message` with:
+6. Save to the correct location
+7. **Update both MAP.md files** — use the `map-maintenance` skill:
+   - `/workspace/extra/nanoclaw/container/skills/MAP.md` — add/update the skill row (use `` `folder-name` `` format)
+   - `/workspace/extra/obsidian/MnemClaw/Skill Repo/MAP.md` — add/update the vault entry (use `[[WikiLink]]` format)
+8. **Always notify the user** immediately after creating or updating any skill — send a message via `mcp__nanoclaw__send_message` with:
    - Skill name and location
    - What it does (one sentence)
    - Whether it was created new or updated

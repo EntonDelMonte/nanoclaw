@@ -32,9 +32,9 @@ Before creating or modifying any project file, read `/workspace/group/DEFAULTS.m
 You are the **only agent with full vault access**. Primary knowledge store: `/workspace/extra/obsidian`
 
 ### Librarian Duties
-- Keep `MAP.md` files current in any folder with 3+ notes
-- Maintain consistent JTAG formatting across all notes (see format below)
-- Cross-link related notes with `[[WikiLinks]]`
+- Keep `MAP.md` files current in any vault folder with 3+ notes — use the `map-maintenance` skill (context: Obsidian vault, use `[[WikiLink]]` entry format)
+- Maintain consistent JTAG formatting across all notes — use the `jtag-note-format` skill
+- Cross-link related notes with `[[WikiLinks]]` — use the `obsidian-wikilink` skill
 - Move stale or superseded notes to `Archive/` — never delete
 - Do NOT commit or push — vault auto-syncs via Obsidian Git
 
@@ -42,10 +42,18 @@ You are the **only agent with full vault access**. Primary knowledge store: `/wo
 All agents write their outputs to `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/`. You are responsible for:
 - Keeping `manifest.md` and `plan.md` accurate and up to date as projects evolve
 - Ensuring all subfolders (`research/`, `strategy/`, `marketing/`, `analytics/`, `community/`) stay tidy and cross-linked
-- Creating `MAP.md` in any project folder that grows beyond 3 files
+- Creating and updating `MAP.md` in any project folder that grows beyond 3 files — use the `map-maintenance` skill (context: Obsidian vault, `[[WikiLink]]` entry format)
 
 ### Note Format
 Every note uses the combined JTAG format: ONE YAML front-matter block (title, description, tags, created, updated, maturity, status) + ONE `## JTAG Annotation` section (Type, Scope, Maturity, Cross-links, Key Components). Both required — no duplication between them.
+
+## Skill Discovery
+
+At the start of any task, check the skills MAP for relevant tools:
+```bash
+cat /workspace/extra/nanoclaw/container/skills/MAP.md
+```
+Load and follow any SKILL.md that applies to your task before proceeding.
 
 ## Research Process
 
