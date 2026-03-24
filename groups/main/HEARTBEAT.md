@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-03-22 20:57 CET
+last_updated: 2026-03-24 06:28 CET
 system:
   github_user: mnemclaw
   obsidian_vault: /workspace/extra/obsidian
@@ -31,9 +31,17 @@ agents:
     status: idle
     last_task: ~
   skill_link:
-    model: minimax-m2:cloud (primary) / claude-sonnet-4-6 / qwen3.5:9b (fallback)
+    model: deepseek-v3.1-terminus (primary) / claude-sonnet-4-6 / qwen3.5:9b (fallback)
     status: idle
-    last_task: ~
+    last_task: wrote 28 container skills across all agents
+  tribe_hub:
+    model: mistral-large-3 (primary) / claude-sonnet-4-6 / qwen3.5:9b (fallback)
+    status: idle
+    last_task: 5 community skills written
+  growth_agent:
+    model: minimax-m2.1:cloud (primary) / deepseek-r1-0528 / qwen3.5:9b (fallback)
+    status: idle
+    last_task: 7 growth/analytics skills written
 
 projects:
   - name: ArtDB
@@ -55,6 +63,18 @@ pending:
     blocker: Repo is private — collaborator invite not yet accepted. EntonDelMonte must add mnemclaw via GitHub Settings > Collaborators.
 
 notes: |
+  2026-03-24:
+  - 28 container skills written and indexed in MAP.md
+  - Self-improvement loop live: /workspace/group/skill-candidates/
+  - Pool bot IPC wiring pending (initBotPool + sendPoolMessage in telegram.ts, IPC sender routing TBD)
+  - Architecture.md updated in vault docs/
+  - map-maintenance skill: general-purpose MAP.md skill for skills folder + vault
+  - Deep research protocol added to Researcher
+  - Skill Link: monitoring skill-candidates/ inbox asynchronously
+  - DEFAULTS.md: TLA + kebab-case naming conventions defined
+  - HAD project folder created for Human Agent Database
+  - Frontmatter inheritance proposal written
+
   2026-03-22:
   - Agent registry restructured: flat agents/ directory under groups/main/
   - Swarm agents: Researcher, Lead Developer, Local Coder, Release Manager, Marketer, Skill Link, Tribe Hub, Growth Agent

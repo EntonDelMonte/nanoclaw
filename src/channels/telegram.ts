@@ -9,6 +9,7 @@ import { ASSISTANT_NAME, GROUPS_DIR, TRIGGER_PATTERN } from '../config.js';
 // Bot pool for agent swarm — send-only Api instances (no polling)
 const poolApis: Api[] = [];
 const senderBotMap = new Map<string, number>(); // "{groupFolder}:{sender}" → pool index
+const poolCurrentOwner: string[] = []; // pool index → current sender name (for rename tracking)
 let nextPoolIndex = 0;
 import { readEnvFile } from '../env.js';
 import { logger } from '../logger.js';
@@ -71,9 +72,14 @@ export async function sendPoolMessage(
     idx = nextPoolIndex % poolApis.length;
     nextPoolIndex++;
     senderBotMap.set(key, idx);
+  }
+
+  // Rename the pool bot if it's currently owned by a different sender
+  if (poolCurrentOwner[idx] !== sender) {
     try {
       await poolApis[idx].setMyName(sender);
       await new Promise((r) => setTimeout(r, 2000));
+      poolCurrentOwner[idx] = sender;
       logger.info(
         { sender, groupFolder, poolIndex: idx },
         'Pool bot assigned and renamed',
