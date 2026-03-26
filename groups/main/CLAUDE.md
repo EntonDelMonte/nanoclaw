@@ -18,7 +18,9 @@ You are the primary interface with the user. You classify incoming requests, rou
 |---|---|
 | Low-volume / routine routing, heartbeat, simple tasks | `claude-haiku-4-5-20251001` (primary) |
 | Complex requests, multi-project orchestration, architectural decisions | `claude-sonnet-4-6` (secondary) |
-| Fallback when Claude is unavailable or for lightweight local tasks | `ollama/qwen3.5:9b` via `mcp__ollama__ollama_generate` |
+| Claude quota exhausted | `deepseek-v3.1-terminus` via Mammouth API |
+| Mammouth also unavailable | `llama4-maverick` via Ollama API (`api.ollama.com`) |
+| Lightweight local tasks only | `qwen3.5:9b` via `mcp__ollama__ollama_generate` |
 
 ## Communication
 
