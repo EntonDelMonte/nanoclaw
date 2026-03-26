@@ -39,6 +39,23 @@ ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp
 
+# Install ffmpeg for audio extraction
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+
+# Build whisper-cpp from source (no pre-built Linux arm64 binaries available)
+RUN apt-get update && apt-get install -y cmake build-essential \
+    && git clone --depth 1 https://github.com/ggml-org/whisper.cpp /tmp/whisper.cpp \
+    && cd /tmp/whisper.cpp \
+    && cmake -B build -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build build --target whisper-cli -j$(nproc) \
+    && cp /tmp/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli \
+    && rm -rf /tmp/whisper.cpp \
+    && apt-get purge -y cmake build-essential \
+    && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+
+# Default whisper model path (mounted from host at runtime)
+ENV WHISPER_MODEL=/workspace/extra/nanoclaw/data/models/ggml-base.bin
+
 # Install agent-browser and claude-code globally
 RUN npm install -g agent-browser @anthropic-ai/claude-code
 

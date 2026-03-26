@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-03-24 06:28 CET
+last_updated: 2026-03-24 20:30 CET
 system:
   github_user: mnemclaw
   obsidian_vault: /workspace/extra/obsidian
@@ -11,13 +11,13 @@ agents:
     status: active
     last_task: identity updated to Dan, context window management added
   researcher:
-    model: kimi-k2-thinking (primary) / claude-sonnet-4-6 / qwen3.5:9b (fallback)
+    model: deepseek-v3.1-terminus (primary) / claude-sonnet-4-6 / llama3.3:70b Ollama cloud (fallback)
     status: idle
-    last_task: ~
+    last_task: trsr project migrated from dox, TSR-mvp.md written, vercel-com site-to-skill crawled
   developer:
-    model: claude-sonnet
+    model: qwen3-coder-plus (primary) / claude-sonnet-4-6 / qwen3:32b Ollama cloud (fallback)
     status: idle
-    last_task: ~
+    last_task: trsr Phase 1 complete — drops API, PostGIS queries, socket.io, drop markers, card, creation modal
   release_manager:
     model: claude-haiku
     status: idle
@@ -25,7 +25,7 @@ agents:
   marketer:
     model: claude-haiku
     status: idle
-    last_task: ~
+    last_task: MTL brand voice guidelines + full site copy written and deployed
   local_coder:
     model: ollama/qwen3.5:9b
     status: idle
@@ -44,17 +44,21 @@ agents:
     last_task: 7 growth/analytics skills written
 
 projects:
-  - name: ArtDB
+  - name: Human Agent Database (HAD)
     status: research complete
-    phase: manifest done, awaiting kickoff
+    phase: manifest migrated, awaiting kickoff
     blockers: ~
   - name: les-digitales-basel
     status: research complete
     phase: funding shortlist written
     blockers: ~
-  - name: mnem-linkpage
-    status: complete ✅
-    phase: released on GitHub Pages
+  - name: Motile (MTL)
+    status: active
+    phase: motile-website live on GitHub Pages — real copy deployed, brand voice in vault
+    blockers: ~
+  - name: trsr (TSR)
+    status: active
+    phase: Phase 1 complete — drops API, PostGIS, socket.io realtime, drop markers, card + voting, creation modal. API needs docker compose up locally; Vercel frontend auto-deployed.
     blockers: ~
 
 pending:
@@ -66,7 +70,7 @@ notes: |
   2026-03-24:
   - 28 container skills written and indexed in MAP.md
   - Self-improvement loop live: /workspace/group/skill-candidates/
-  - Pool bot IPC wiring pending (initBotPool + sendPoolMessage in telegram.ts, IPC sender routing TBD)
+  - Pool bot fix shipped: sender header prepended when setMyName rate-limited; built, needs NanoClaw restart
   - Architecture.md updated in vault docs/
   - map-maintenance skill: general-purpose MAP.md skill for skills folder + vault
   - Deep research protocol added to Researcher

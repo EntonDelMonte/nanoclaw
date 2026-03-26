@@ -2,6 +2,7 @@
 title: Container Skills — Map of Content
 description: Index of all installed container skills. Read this before searching for a skill.
 updated: 2026-03-24
+last_audit: 2026-03-24 — Skill Link added 5 product-shipping skills (landing-page-architecture, auth-accounts, stripe-subscriptions, vps-linux-ops, deploy-go-live)
 status: living document — Skill Link updates on every add/change
 ---
 
@@ -34,6 +35,18 @@ status: living document — Skill Link updates on every add/change
 | `web-self-testing` | Playwright headless E2E: container-safe flags, page objects, CI YAML |
 | `plan-md-update` | vault plan.md update workflow: phase status, milestones, blockers |
 | `skill-candidate-reporting` | Deposit skill discovery notes to /workspace/group/skill-candidates/ |
+
+---
+
+## Product Shipping — Digital Products
+
+| Skill | Description |
+|-------|-------------|
+| `landing-page-architecture` | Landing page section order, CTA hierarchy, SEO (meta/OG/structured data), image optimisation, pricing section patterns |
+| `auth-accounts` | NextAuth v5, Lucia Auth, and Supabase Auth — sessions, magic links, OAuth, password reset, email verification, user profiles, CSRF |
+| `stripe-subscriptions` | Stripe Checkout, Customer Portal, webhooks, subscription lifecycle (active/trialing/past_due/cancelled), billing dashboard |
+| `vps-linux-ops` | VPS hardening (UFW, fail2ban, SSH), Nginx/Caddy with SSL, PM2 cluster mode, Docker Compose, log rotation, automated DB backups |
+| `deploy-go-live` | GitHub Actions CI/CD, secrets management, DNS/Cloudflare setup, zero-downtime deploys, UptimeRobot health checks, Sentry error tracking |
 
 ---
 
@@ -78,6 +91,14 @@ status: living document — Skill Link updates on every add/change
 | `youtube-transcriber` | Fetch YouTube transcripts, archive as Markdown in vault |
 | `site-to-skill` | Crawl a site and extract design/content patterns into a skill file |
 | `agent-browser` | Browser automation: research, screenshots, forms, web app testing |
+
+---
+
+## Finance & Accounting
+
+| Skill | Description |
+|-------|-------------|
+| `hledger` | Plain-text double-entry accounting — journal format, queries, reports, CSV import, budget tracking |
 
 ---
 
