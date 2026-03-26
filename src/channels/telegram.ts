@@ -3,6 +3,7 @@ import https from 'https';
 import path from 'path';
 
 import { Api, Bot } from 'grammy';
+import { processImage } from '../image.js';
 
 import { ASSISTANT_NAME, GROUPS_DIR, TRIGGER_PATTERN } from '../config.js';
 
@@ -309,7 +310,68 @@ export class TelegramChannel implements Channel {
       });
     };
 
-    this.bot.on('message:photo', (ctx) => storeNonText(ctx, '[Photo]'));
+    this.bot.on('message:photo', async (ctx) => {
+      const chatJid = `tg:${ctx.chat.id}`;
+      const group = this.opts.registeredGroups()[chatJid];
+      if (!group) return;
+
+      // Telegram sends multiple sizes — use the highest resolution (last item)
+      const photos = ctx.message.photo;
+      const photo = photos[photos.length - 1];
+      if (!photo?.file_id) {
+        storeNonText(ctx, '[Photo]');
+        return;
+      }
+
+      try {
+        const file = await this.bot!.api.getFile(photo.file_id);
+        if (!file.file_path) {
+          storeNonText(ctx, '[Photo]');
+          return;
+        }
+
+        const downloadUrl = `https://api.telegram.org/file/bot${this.botToken}/${file.file_path}`;
+        const ext = path.extname(file.file_path) || '.jpg';
+        const filename = `photo_${photo.file_id}${ext}`;
+        const attachmentsDir = path.join(GROUPS_DIR, group.folder, 'attachments');
+        fs.mkdirSync(attachmentsDir, { recursive: true });
+        const localPath = path.join(attachmentsDir, filename);
+
+        // Download resized image (max 1024px) for multimodal vision
+        const processed = await processImage(downloadUrl);
+
+        // Save resized JPEG to disk (agent can also access via Read tool)
+        fs.writeFileSync(localPath, Buffer.from(processed.base64, 'base64'));
+
+        const caption = ctx.message.caption ? ` ${ctx.message.caption}` : '';
+        // Embed the container-accessible path so the agent-runner can build
+        // a multimodal content block at execution time
+        const content = `[Photo: /workspace/group/attachments/${filename}]${caption}`;
+
+        const timestamp = new Date(ctx.message.date * 1000).toISOString();
+        const senderName =
+          ctx.from?.first_name ||
+          ctx.from?.username ||
+          ctx.from?.id?.toString() ||
+          'Unknown';
+        const isGroup =
+          ctx.chat.type === 'group' || ctx.chat.type === 'supergroup';
+        this.opts.onChatMetadata(chatJid, timestamp, undefined, 'telegram', isGroup);
+        this.opts.onMessage(chatJid, {
+          id: ctx.message.message_id.toString(),
+          chat_jid: chatJid,
+          sender: ctx.from?.id?.toString() || '',
+          sender_name: senderName,
+          content,
+          timestamp,
+          is_from_me: false,
+        });
+        logger.info({ chatJid, filename }, 'Telegram photo stored');
+      } catch (err) {
+        logger.error({ err }, 'Failed to process Telegram photo, falling back to placeholder');
+        storeNonText(ctx, '[Photo]');
+      }
+    });
     this.bot.on('message:video', (ctx) => storeNonText(ctx, '[Video]'));
     this.bot.on('message:voice', (ctx) => storeNonText(ctx, '[Voice message]'));
     this.bot.on('message:audio', (ctx) => storeNonText(ctx, '[Audio]'));

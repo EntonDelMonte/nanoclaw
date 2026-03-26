@@ -33,6 +33,11 @@ import { RegisteredGroup } from './types.js';
 const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
 const OUTPUT_END_MARKER = '---NANOCLAW_OUTPUT_END---';
 
+export interface ContainerImageData {
+  base64: string;
+  mimeType: string;
+}
+
 export interface ContainerInput {
   prompt: string;
   sessionId?: string;
@@ -41,6 +46,8 @@ export interface ContainerInput {
   isMain: boolean;
   isScheduledTask?: boolean;
   assistantName?: string;
+  /** Images to include as multimodal content blocks in the initial prompt */
+  images?: ContainerImageData[];
 }
 
 export interface ContainerOutput {

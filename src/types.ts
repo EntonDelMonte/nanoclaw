@@ -42,6 +42,11 @@ export interface RegisteredGroup {
   isMain?: boolean; // True for the main control group (no trigger, elevated privileges)
 }
 
+export interface ImageData {
+  base64: string;
+  mimeType: string;
+}
+
 export interface NewMessage {
   id: string;
   chat_jid: string;
@@ -51,6 +56,8 @@ export interface NewMessage {
   timestamp: string;
   is_from_me?: boolean;
   is_bot_message?: boolean;
+  /** Attached image (e.g. from Telegram photo messages) */
+  imageData?: ImageData;
 }
 
 export interface ScheduledTask {

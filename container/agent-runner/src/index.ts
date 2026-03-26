@@ -47,9 +47,13 @@ interface SessionsIndex {
   entries: SessionEntry[];
 }
 
+type ContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } };
+
 interface SDKUserMessage {
   type: 'user';
-  message: { role: 'user'; content: string };
+  message: { role: 'user'; content: string | ContentBlock[] };
   parent_tool_use_id: null;
   session_id: string;
 }
@@ -57,6 +61,56 @@ interface SDKUserMessage {
 const IPC_INPUT_DIR = '/workspace/ipc/input';
 const IPC_INPUT_CLOSE_SENTINEL = path.join(IPC_INPUT_DIR, '_close');
 const IPC_POLL_MS = 500;
+
+// Pattern: [Photo: /workspace/group/attachments/<filename>]
+const PHOTO_TAG_RE = /\[Photo:\s*(\/workspace\/group\/attachments\/[^\]]+)\]/g;
+
+/**
+ * Build a multimodal content array from a message string.
+ * Detects [Photo: /path] tags, loads them as base64 image blocks, and
+ * replaces the tag with surrounding text.  Returns a plain string when
+ * no photo tags are found (keeps the fast path unchanged).
+ */
+function buildContent(text: string): string | ContentBlock[] {
+  // Quick exit: no photo tags
+  if (!PHOTO_TAG_RE.test(text)) return text;
+  // Reset lastIndex after the test above
+  PHOTO_TAG_RE.lastIndex = 0;
+
+  const blocks: ContentBlock[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = PHOTO_TAG_RE.exec(text)) !== null) {
+    const before = text.slice(lastIndex, match.index).trim();
+    if (before) blocks.push({ type: 'text', text: before });
+
+    const filePath = match[1];
+    try {
+      const data = fs.readFileSync(filePath);
+      // Detect MIME type from magic bytes; fall back to image/jpeg
+      let mediaType = 'image/jpeg';
+      if (data[0] === 0x89 && data[1] === 0x50) mediaType = 'image/png';
+      else if (data[0] === 0x47 && data[1] === 0x49) mediaType = 'image/gif';
+      else if (data[0] === 0x52 && data[1] === 0x49) mediaType = 'image/webp';
+      blocks.push({
+        type: 'image',
+        source: { type: 'base64', media_type: mediaType, data: data.toString('base64') },
+      });
+    } catch (err) {
+      log(`Failed to load image ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+      // Preserve original tag as text so the agent knows about it
+      blocks.push({ type: 'text', text: match[0] });
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  const after = text.slice(lastIndex).trim();
+  if (after) blocks.push({ type: 'text', text: after });
+
+  return blocks.length > 0 ? blocks : text;
+}
 
 /**
  * Push-based async iterable for streaming user messages to the SDK.
@@ -70,7 +124,7 @@ class MessageStream {
   push(text: string): void {
     this.queue.push({
       type: 'user',
-      message: { role: 'user', content: text },
+      message: { role: 'user', content: buildContent(text) },
       parent_tool_use_id: null,
       session_id: '',
     });
