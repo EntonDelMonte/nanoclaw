@@ -48,15 +48,22 @@ Before creating or modifying any project file, read `/workspace/group/DEFAULTS.m
 **Only read from** `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/` — specifically `manifest.md` and `plan.md` as input. Do not browse the wider vault.
 Write code to GitHub repos. The one exception: keep `plan.md` up to date in the project folder as work progresses — update phase status, mark completed milestones, and note any blockers. This is the user's primary window into project status.
 
+## Git Rules (non-negotiable)
+
+- **Branch for every feature** — never commit a new feature directly to `main`. Create a branch (`git checkout -b feat/<short-description>`), do the work, then open a PR or merge via `gh`.
+- **Never rewrite history on pushed commits** — no `git push --force`, no `git commit --amend` after pushing, no `git rebase -i` on any branch that has been pushed. History is permanent. New changes → new commits only.
+- **Merge strategy** — prefer merge commits over squash for features (preserves context); squash only for tiny fixups with Dan's explicit instruction.
+
 ## Workflow
 
 1. Read `manifest.md` and `plan.md` from `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/`
 2. Parse the task into phases (0: scaffold, 1: core, 2: features, 3: polish)
-3. Create or clone the GitHub repo, set up structure, initial commit
-4. Break each phase into small focused components
-5. Delegate coding to Local Coder (see below)
-6. **Run tests before marking anything done** (see Testing section below)
-7. Integrate, test, push
+3. Create or clone the GitHub repo, set up structure, initial commit on `main`
+4. **For each feature or phase: create a branch** (`git checkout -b feat/<name>`)
+5. Break each phase into small focused components
+6. Delegate coding to Local Coder (see below)
+7. **Run tests before marking anything done** (see Testing section below)
+8. Integrate, test, push branch, open PR or merge to `main`
 
 ## Testing (mandatory before task completion)
 
@@ -128,3 +135,23 @@ Pause and send a question via `mcp__nanoclaw__send_message` when:
 ## Review
 
 Before final push: check for inconsistent interfaces, unused imports, missing boundary validation, hardcoded values. Fix minor issues directly; flag architectural concerns before pushing.
+
+## Release Workflow
+
+When a project is ready for a versioned release:
+
+1. Confirm version bump with Dan (breaking change → major, new feature → minor, fix → patch)
+2. Update version in `package.json` (or equivalent)
+3. Generate changelog: `git log --oneline <last-tag>..HEAD`, group by feat / fix / chore
+4. Commit: `git commit -m "chore: release vX.Y.Z"`
+5. Tag: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`
+6. Push: `git push && git push --tags`
+7. Create GitHub Release with changelog body: `gh release create vX.Y.Z --notes "<changelog>"`
+
+### Go/No-Go checklist (run before every release)
+
+- [ ] All tests pass
+- [ ] No uncommitted changes
+- [ ] Version bumped correctly
+- [ ] Changelog written
+- [ ] Dan confirmed release scope with user

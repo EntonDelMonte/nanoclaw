@@ -18,11 +18,7 @@ agents:
     model: qwen3-coder-plus (primary) / claude-sonnet-4-6 / qwen3:32b Ollama cloud (fallback)
     status: idle
     last_task: trsr Phase 1 complete — drops API, PostGIS queries, socket.io, drop markers, card, creation modal
-  release_manager:
-    model: claude-haiku
-    status: idle
-    last_task: ~
-  marketer:
+copywriter:
     model: claude-haiku
     status: idle
     last_task: MTL brand voice guidelines + full site copy written and deployed
@@ -38,7 +34,7 @@ agents:
     model: mistral-large-3 (primary) / claude-sonnet-4-6 / qwen3.5:9b (fallback)
     status: idle
     last_task: 5 community skills written
-  growth_agent:
+  growth_hacker:
     model: minimax-m2.1:cloud (primary) / deepseek-r1-0528 / qwen3.5:9b (fallback)
     status: idle
     last_task: 7 growth/analytics skills written
@@ -81,7 +77,7 @@ notes: |
 
   2026-03-22:
   - Agent registry restructured: flat agents/ directory under groups/main/
-  - Swarm agents: Researcher, Lead Developer, Local Coder, Release Manager, Marketer, Skill Link, Tribe Hub, Growth Agent
+  - Swarm agents: Researcher, Lead Developer, Local Coder, Copywriter, Skill Link, Tribe Hub, Growth Hacker
   - groups/telegram_main merged into groups/main — single source of truth
   - Project files mapped to MnemClaw/projects/<ProjectName>/ in vault
   - skills-library mount added: /workspace/extra/skills-library (read-only)

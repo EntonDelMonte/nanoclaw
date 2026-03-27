@@ -88,7 +88,7 @@ MnemClaw/projects/<project-folder-name>/
 ├── <TLA>-plan.md      ← phased project plan (Researcher creates, Lead Developer updates)
 ├── research/          ← background research and references (Researcher)
 ├── strategy/          ← business model, roadmap, GTM (Researcher)
-├── marketing/         ← copy, campaigns, positioning (Marketer)
+├── marketing/         ← copy, campaigns, positioning (Copywriter)
 ├── analytics/         ← metrics reports (Researcher)
 └── community/         ← issue triage, contributor notes (Community Manager)
 ```
@@ -129,10 +129,9 @@ When triggered by the heartbeat schedule, read HEARTBEAT.md and send a status up
 • Dan (haiku/sonnet) — <last_task>
 • Researcher (haiku) — <status> | <last_task>
 • Lead Developer (qwen3-coder:480b/sonnet) — <status> | <last_task>
-• Release Manager (haiku) — <status> | <last_task>
-• Marketer (haiku) — <status> | <last_task>
+• Copywriter (haiku) — <status> | <last_task>
 • Tribe Hub (mistral-large-3) — <status> | <last_task>
-• Growth Agent (minimax-m2.1) — <status> | <last_task>
+• Growth Hacker (minimax-m2.1) — <status> | <last_task>
 
 *Pending*
 • <blocked task and blocker if any>
@@ -173,10 +172,9 @@ All agent role definitions live in `/workspace/group/agents/`. Before spawning a
 |------|------|-------|
 | `researcher.md` | Research, vault, knowledge synthesis, strategy, analytics | deepseek-v3.1-terminus (Mammouth) → claude-sonnet-4-6 → qwen3.5:397b (Ollama cloud) |
 | `lead-developer.md` | Code implementation, GitHub, architecture | qwen3-coder-plus (Mammouth) → claude-sonnet-4-6 → qwen3-coder:480b (Ollama cloud) |
-| `release-manager.md` | Versioning, changelogs, deploys | claude-haiku-4-5-20251001 → qwen3.5:27b (local Ollama) |
-| `marketer.md` | Copywriting, campaigns, positioning | claude-haiku-4-5-20251001 → qwen3.5:27b (local Ollama) |
+| `copywriter.md` | Copywriting, campaigns, positioning | claude-haiku-4-5-20251001 → qwen3.5:27b (local Ollama) |
 | `tribe-hub.md` | Social presence, sentiment analysis, Emotional Detection | mistral-large-3 (Mammouth) → claude-sonnet-4-6 → mistral-large-3:675b (Ollama cloud) |
-| `growth-agent.md` | Analytics, ads, Mautic marketing automation, market forecasting, Mirofish simulations | minimax-m2.1:cloud → deepseek-r1-0528 (simulations) → sonar-deep-research (market intel) → qwen3.5:27b (local Ollama) |
+| `growth-hacker.md` | Analytics, ads, Mautic marketing automation, market forecasting, Mirofish simulations | minimax-m2.1:cloud → deepseek-r1-0528 (simulations) → sonar-deep-research (market intel) → qwen3.5:27b (local Ollama) |
 | `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | deepseek-v3.1-terminus → claude-sonnet-4-6 → qwen3.5:397b (Ollama cloud) |
 
 Spawn agents in parallel when tasks are independent.
