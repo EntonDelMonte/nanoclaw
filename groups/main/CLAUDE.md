@@ -171,13 +171,13 @@ All agent role definitions live in `/workspace/group/agents/`. Before spawning a
 
 | File | Role | Model |
 |------|------|-------|
-| `researcher.md` | Research, vault, knowledge synthesis, strategy, analytics | deepseek-v3.1-terminus (Mammouth) → claude-sonnet-4-6 → qwen3.5:9b |
-| `lead-developer.md` | Code implementation, GitHub, architecture | qwen3-coder-plus (Mammouth) → claude-sonnet-4-6 → qwen3.5:9b (32k limit — hold large tasks if quota exhausted) |
-| `release-manager.md` | Versioning, changelogs, deploys | claude-haiku-4-5-20251001 |
-| `marketer.md` | Copywriting, campaigns, positioning | claude-haiku-4-5-20251001 |
-| `tribe-hub.md` | Social presence, sentiment analysis, Emotional Detection | mistral-large-3 (Mammouth) → claude-sonnet-4-6 → qwen3.5:9b |
-| `growth-agent.md` | Analytics, ads, Mautic marketing automation, market forecasting, Mirofish simulations | minimax-m2.1:cloud → deepseek-r1-0528 (simulations) → sonar-deep-research (market intel) → qwen3.5:9b |
-| `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | deepseek-v3.1-terminus → claude-sonnet-4-6 → qwen3.5:9b |
+| `researcher.md` | Research, vault, knowledge synthesis, strategy, analytics | deepseek-v3.1-terminus (Mammouth) → claude-sonnet-4-6 → qwen3.5:397b (Ollama cloud) |
+| `lead-developer.md` | Code implementation, GitHub, architecture | qwen3-coder-plus (Mammouth) → claude-sonnet-4-6 → qwen3-coder:480b (Ollama cloud) |
+| `release-manager.md` | Versioning, changelogs, deploys | claude-haiku-4-5-20251001 → qwen3.5:27b (local Ollama) |
+| `marketer.md` | Copywriting, campaigns, positioning | claude-haiku-4-5-20251001 → qwen3.5:27b (local Ollama) |
+| `tribe-hub.md` | Social presence, sentiment analysis, Emotional Detection | mistral-large-3 (Mammouth) → claude-sonnet-4-6 → mistral-large-3:675b (Ollama cloud) |
+| `growth-agent.md` | Analytics, ads, Mautic marketing automation, market forecasting, Mirofish simulations | minimax-m2.1:cloud → deepseek-r1-0528 (simulations) → sonar-deep-research (market intel) → qwen3.5:27b (local Ollama) |
+| `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | deepseek-v3.1-terminus → claude-sonnet-4-6 → qwen3.5:397b (Ollama cloud) |
 
 Spawn agents in parallel when tasks are independent.
 

@@ -14,7 +14,7 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 |-----------|-------|
 | Primary — deep research, synthesis, knowledge work | `deepseek-v3.1-terminus` via Mammouth API |
 | Complex multi-step reasoning, agent tasks | Claude 4.6 Sonnet (Agent SDK) |
-| Fallback — when Mammouth unavailable | `llama3.3:70b` via Ollama API |
+| Fallback — when Mammouth unavailable | `qwen3.5:397b` via Ollama API |
 
 Use the Mammouth OpenAI-compatible API for the primary model:
 ```
@@ -27,7 +27,7 @@ Use the Ollama API for the fallback model:
 ```
 base_url: https://api.ollama.com/v1
 api_key: $OLLAMA_API_KEY
-model: llama3.3:70b
+model: qwen3.5:397b
 ```
 
 ## Conventions

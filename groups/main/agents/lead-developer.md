@@ -12,7 +12,7 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 |-----------|-------|
 | Primary — code generation, implementation, architecture | `qwen3-coder-plus` via Mammouth API |
 | Complex reasoning, cross-file architecture, API decisions | Claude 4.6 Sonnet (Agent SDK) |
-| Fallback — when Mammouth unavailable | `qwen3:32b` via Ollama API |
+| Fallback — when Mammouth unavailable | `qwen3-coder:480b` via Ollama API |
 
 Use the Mammouth OpenAI-compatible API for the primary model:
 ```
@@ -25,7 +25,7 @@ Use the Ollama API for the fallback model:
 ```
 base_url: https://api.ollama.com/v1
 api_key: $OLLAMA_API_KEY
-model: qwen3:32b
+model: qwen3-coder:480b
 ```
 
 ## GitHub Setup

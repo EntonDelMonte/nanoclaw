@@ -407,6 +407,30 @@ export class TelegramChannel implements Channel {
         }
       }
 
+      // Handle image documents (sent as original-quality files, not Telegram-compressed photos)
+      if (mime.startsWith('image/') && group && doc?.file_id) {
+        try {
+          const file = await this.bot!.api.getFile(doc.file_id);
+          if (file.file_path) {
+            const downloadUrl = `https://api.telegram.org/file/bot${this.botToken}/${file.file_path}`;
+            const ext = path.extname(name) || '.jpg';
+            const filename = `photo_${doc.file_id}${ext}`;
+            const attachmentsDir = path.join(GROUPS_DIR, group.folder, 'attachments');
+            fs.mkdirSync(attachmentsDir, { recursive: true });
+            const localPath = path.join(attachmentsDir, filename);
+            const processed = await processImage(downloadUrl);
+            fs.writeFileSync(localPath, Buffer.from(processed.base64, 'base64'));
+            const caption = ctx.message.caption ? ` ${ctx.message.caption}` : '';
+            const content = `[Photo: /workspace/group/attachments/${filename}]${caption}`;
+            logger.info({ chatJid, filename }, 'Telegram image document stored');
+            storeNonText(ctx, content);
+            return;
+          }
+        } catch (err) {
+          logger.error({ err, name }, 'Failed to process Telegram image document');
+        }
+      }
+
       storeNonText(ctx, `[Document: ${name}]`);
     });
     this.bot.on('message:sticker', (ctx) => {
