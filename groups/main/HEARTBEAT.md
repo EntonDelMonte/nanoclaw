@@ -53,10 +53,7 @@ projects:
     phase: Phase 1 complete — drops API, PostGIS, socket.io realtime, drop markers, card + voting, creation modal. API needs docker compose up locally; Vercel frontend auto-deployed.
     blockers: ~
 
-pending:
-  - task: Fork EntonDelMonte/littlelink-fo into mnemclaw
-    status: blocked
-    blocker: Repo is private — collaborator invite not yet accepted. EntonDelMonte must add mnemclaw via GitHub Settings > Collaborators.
+pending: []
 
 notes: |
   2026-03-24:
