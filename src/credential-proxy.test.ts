@@ -263,7 +263,7 @@ describe('credential-proxy fallback', () => {
     // Mammouth returns a valid OpenAI response
     const mammouthReqBodies: string[] = [];
     const mammouth = await startMockServer((_req, res, body) => {
-      mammouthReqBodies.push(body);
+      mammouthReqBodies.push(body ?? '');
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(openAISuccess('hello from mammouth'));
     });
@@ -330,7 +330,7 @@ describe('credential-proxy fallback', () => {
 
     let capturedBody = '';
     const mammouth = await startMockServer((_req, res, body) => {
-      capturedBody = body;
+      capturedBody = body ?? '';
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(openAISuccess());
     });

@@ -8,7 +8,16 @@ import https from 'https';
 import http from 'http';
 import path from 'path';
 
-import sharp from 'sharp';
+// sharp is an optional native dependency — load lazily so a missing binary
+// doesn't crash the host process at startup.
+let sharpModule: typeof import('sharp') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  sharpModule = require('sharp') as typeof import('sharp');
+} catch {
+  // sharp not available (e.g. native binary missing after cross-platform install)
+  // processImage will fall back to returning the raw image without resizing.
+}
 
 export interface ProcessedImage {
   base64: string;
@@ -53,18 +62,19 @@ export async function processImage(
 ): Promise<ProcessedImage> {
   const raw = await downloadBuffer(url);
 
-  const resized = await sharp(raw)
-    .resize(maxDimension, maxDimension, {
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-    .jpeg({ quality: 85 })
-    .toBuffer();
+  if (sharpModule) {
+    const resized = await sharpModule(raw)
+      .resize(maxDimension, maxDimension, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    return { base64: resized.toString('base64'), mimeType: 'image/jpeg' };
+  }
 
-  return {
-    base64: resized.toString('base64'),
-    mimeType: 'image/jpeg',
-  };
+  // Fallback: pass raw image without resizing (sharp not available)
+  return { base64: raw.toString('base64'), mimeType: 'image/jpeg' };
 }
 
 /**
