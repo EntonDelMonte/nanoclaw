@@ -79,19 +79,37 @@ When orchestrating heavy multi-agent sessions, set explicit stopping points:
 ## Project Structure
 
 All project files live under `/workspace/extra/obsidian/MnemClaw/projects/<project-folder-name>/`.
-Folder names are kebab-case lowercase. All files are prefixed with the project's three-letter acronym (TLA).
-Full naming conventions and agent responsibilities are defined in `/workspace/group/DEFAULTS.md` — read it before creating or modifying any project files.
 
+### Naming conventions
+- **Folder name**: kebab-case lowercase — e.g. `human-agent-database`
+- **Acronym (TLA)**: uppercase three letters — e.g. `HAD` — always confirmed with user before project creation (🔴)
+- **All files** within a project are prefixed with the TLA — e.g. `HAD-manifest.md`, `HAD-plan.md`
+
+### Existing projects
+| Project | Folder | TLA |
+|---------|--------|-----|
+| Human Agent Database | `human-agent-database` | HAD |
+| mnem-linkpage | `mnem-linkpage` | *(ask user)* |
+| ArtDB | `artdb` | *(ask user)* |
+| trsr | `trsr` | TSR |
+
+### Folder structure
 ```
 MnemClaw/projects/<project-folder-name>/
 ├── <TLA>-manifest.md  ← product manifest (Researcher)
-├── <TLA>-plan.md      ← phased project plan (Researcher creates, Lead Developer updates)
-├── research/          ← background research and references (Researcher)
-├── strategy/          ← business model, roadmap, GTM (Researcher)
-├── marketing/         ← copy, campaigns, positioning (Copywriter)
-├── analytics/         ← metrics reports (Researcher)
-└── community/         ← issue triage, contributor notes (Community Manager)
+├── <TLA>-plan.md      ← phased delivery plan (Researcher creates, Lead Developer updates)
+├── research/          ← background research, references, competitor notes (Researcher)
+│   └── MAP.md         ← created when 3+ files exist
+├── copy/              ← copy, campaigns, positioning, SEO (Copywriter)
+├── growth/            ← metrics, ads, funnel data, market intel (Growth Hacker)
+└── community/         ← issue triage, contributor notes, FAQ gaps (Tribe Hub)
 ```
+
+### File rules
+- **Never create duplicate files** — update in place
+- **Never delete files** — move to `Archive/` if superseded
+- **MAP.md required** in any folder with 3+ notes — Researcher creates and maintains it
+- **Always update `plan.md`** after any significant development milestone
 
 Always pass the project name, TLA, and base path to agents when briefing them.
 
@@ -100,7 +118,7 @@ Always pass the project name, TLA, and base path to agents when briefing them.
 ## Core Rules
 
 - **Authority table**: read `/workspace/group/authority-table.md` before acting. 🔴 decisions require explicit user approval — stop and ask. 🟡 proceed then confirm. 🟢 act freely.
-- **Always ask for the project name AND a three-letter acronym (TLA)** before starting any new project — never assume or generate either. Both are 🔴 decisions. See `DEFAULTS.md` for naming conventions.
+- **Always ask for the project name AND a three-letter acronym (TLA)** before starting any new project — never assume or generate either. Both are 🔴 decisions.
 - **Never do deep work yourself** that belongs to a specialist — delegate via swarm agents.
 - **Communicate concisely** with the user. Send milestone updates, not blow-by-blow progress.
 - **Agents speak directly** — swarm agents send their results directly to the user via `mcp__nanoclaw__send_message`. Do not relay or summarise agent output unless the user explicitly asks. Only interrupt the user for 🔴 decisions and blockers.

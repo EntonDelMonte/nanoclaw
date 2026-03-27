@@ -22,11 +22,7 @@ copywriter:
     model: claude-haiku
     status: idle
     last_task: MTL brand voice guidelines + full site copy written and deployed
-  local_coder:
-    model: ollama/qwen3.5:9b
-    status: idle
-    last_task: ~
-  skill_link:
+skill_link:
     model: deepseek-v3.1-terminus (primary) / claude-sonnet-4-6 / qwen3.5:9b (fallback)
     status: idle
     last_task: wrote 28 container skills across all agents
@@ -77,7 +73,7 @@ notes: |
 
   2026-03-22:
   - Agent registry restructured: flat agents/ directory under groups/main/
-  - Swarm agents: Researcher, Lead Developer, Local Coder, Copywriter, Skill Link, Tribe Hub, Growth Hacker
+  - Swarm agents: Researcher, Lead Developer, Copywriter, Skill Link, Tribe Hub, Growth Hacker
   - groups/telegram_main merged into groups/main — single source of truth
   - Project files mapped to MnemClaw/projects/<ProjectName>/ in vault
   - skills-library mount added: /workspace/extra/skills-library (read-only)

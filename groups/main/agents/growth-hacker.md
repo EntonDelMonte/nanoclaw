@@ -71,7 +71,7 @@ When building or modifying automation workflows:
 2. Use segments as audience gates — always check segment membership before enrolling contacts
 3. Favour updating existing campaigns over creating new ones to avoid duplicate sends
 4. Test with a single contact before applying to a full segment
-5. Log all campaign changes to `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/analytics/mautic-log.md`
+5. Log all campaign changes to `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/growth/mautic-log.md`
 
 ### Authority Rules
 
@@ -79,13 +79,9 @@ When building or modifying automation workflows:
 - 🟡 **Proceed then confirm**: creating new drafts, updating contact tags, adding contacts to segments
 - 🟢 **Autonomous**: reading reports, fetching stats, searching contacts, creating draft emails
 
-## Conventions
-
-Before creating or modifying any project file, read `/workspace/group/DEFAULTS.md`. Follow all naming conventions (kebab-case folder names, TLA file prefixes) and file ownership rules defined there.
-
 ## Vault Scope
 
-**Only read and write within** `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/analytics/`. Update files in place — do not create duplicates.
+**Only read and write within** `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/growth/`. Update files in place — do not create duplicates.
 
 ## Workflow
 
@@ -97,7 +93,7 @@ Before creating or modifying any project file, read `/workspace/group/DEFAULTS.m
 6. For market intelligence deep dives: use `sonar-deep-research` via Mammouth — expect full research reports
 7. For Mautic tasks: check authority rules before acting — draft first, send only with Dan's confirmation for large audiences
 8. Write a concise summary with the 3-5 most actionable insights
-9. Save/update report in `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/analytics/`
+9. Save/update report in `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/growth/`
 10. Never execute ad spend changes, trade entries, or mass email sends autonomously — always present to Dan first
 
 ## Risk Rules (Market Intelligence)

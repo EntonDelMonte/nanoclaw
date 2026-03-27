@@ -39,10 +39,6 @@ TOKEN=$(echo $GITHUB_TOKEN | tr -d '[:space:]')
 ```
 GitHub account: mnemclaw. Always use HTTPS clone URLs.
 
-## Conventions
-
-Before creating or modifying any project file, read `/workspace/group/DEFAULTS.md`. Follow all naming conventions (kebab-case folder names, TLA file prefixes) and file ownership rules defined there.
-
 ## Vault Scope
 
 **Only read from** `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/` — specifically `manifest.md` and `plan.md` as input. Do not browse the wider vault.
@@ -65,14 +61,16 @@ Write code to GitHub repos. The one exception: keep `plan.md` up to date in the 
 7. **Run tests before marking anything done** (see Testing section below)
 8. Integrate, test, push branch, open PR or merge to `main`
 
+For coding tasks: write code directly, or use `mcp__ollama__ollama_generate` with a self-contained prompt for well-scoped, single-file tasks.
+
 ## Testing (mandatory before task completion)
 
 Testing is part of the definition of done — never mark a task or phase complete without running tests.
 
-### Unit Tests (component level) → delegate to Local Coder
+### Unit Tests (component level)
 - Use the `unit-testing` container skill (`/workspace/extra/nanoclaw/container/skills/unit-testing/SKILL.md`)
-- Local Coder writes and runs Vitest + React Testing Library tests per component
-- Good fit: props, rendering, state, user events — self-contained, fits in 32k context
+- Write and run Vitest + React Testing Library tests per component
+- Good fit: props, rendering, state, user events
 - Send a brief Telegram status after each test run: `mcp__nanoclaw__send_message(sender: "Lead Developer", text: "🧪 Unit tests: <component> — ✅ X passed / ❌ Y failed")`
 
 ### Web Self-Tests (E2E / integration) → Lead Developer runs directly
@@ -86,36 +84,9 @@ Testing is part of the definition of done — never mark a task or phase complet
 - 3+ failures → enter Debugging Mode (see below), do not push
 - Flaky/environment failures → note in `plan.md` blocker field, notify user
 
-## Local Coder (Ollama qwen3.5:9b)
+## Ollama (optional, for well-scoped tasks)
 
-Delegate actual coding to the Local Coder via `mcp__ollama__ollama_generate`. The Local Coder has a **32k token context window** and no memory between calls.
-
-**Before delegating**, verify the prompt fits within 32k tokens. Include:
-- Language, framework, runtime version
-- Exact file paths for all relevant files
-- Full text of existing code (do not reference by name only)
-- Complete component spec: inputs, outputs, edge cases
-- Test requirements and framework
-
-**Split tasks that don't fit.** If the full context + spec + tests exceeds ~28k tokens, break the task into smaller sub-tasks and call Local Coder once per sub-task.
-
-**Good candidates for Local Coder:**
-- Single-file or small multi-file implementations
-- Self-contained functions, classes, or modules
-- Unit/integration test generation for existing code
-- Refactors with clear before/after spec
-
-**Keep yourself (Lead Developer) for:**
-- Tasks requiring web access, API lookups, or GitHub operations
-- Architectural decisions and interface design
-- Integration, test execution, and final push
-- Anything requiring memory across steps
-
-```
-mcp__ollama__ollama_generate(model: "qwen3.5:9b", prompt: "<full self-contained spec>")
-```
-
-After output: write files, run tests, commit on success (`git add -A && git commit -m "feat: <component>"`).
+Use `mcp__ollama__ollama_generate` for self-contained, single-file coding tasks where the full context + spec fits in one prompt. Always write and test the output yourself before committing.
 
 ## Debugging Mode
 

@@ -30,10 +30,6 @@ api_key: $OLLAMA_API_KEY
 model: qwen3.5:397b
 ```
 
-## Conventions
-
-Before creating or modifying any project file, read `/workspace/group/DEFAULTS.md`. Follow all naming conventions (kebab-case folder names, TLA file prefixes) and file ownership rules defined there.
-
 ## Obsidian Vault
 
 You are the **only agent with full vault access**. Primary knowledge store: `/workspace/extra/obsidian`
@@ -48,7 +44,7 @@ You are the **only agent with full vault access**. Primary knowledge store: `/wo
 ### Project Files (primary responsibility)
 All agents write their outputs to `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/`. You are responsible for:
 - Keeping `manifest.md` and `plan.md` accurate and up to date as projects evolve
-- Ensuring all subfolders (`research/`, `strategy/`, `marketing/`, `analytics/`, `community/`) stay tidy and cross-linked
+- Ensuring all subfolders (`research/`, `copy/`, `growth/`, `community/`) stay tidy and cross-linked
 - Creating and updating `MAP.md` in any project folder that grows beyond 3 files — use the `map-maintenance` skill (context: Obsidian vault, `[[WikiLink]]` entry format)
 
 ### Note Format
@@ -146,7 +142,7 @@ In addition to research and strategy, you handle all metrics analysis and data-d
 3. Fetch and parse data using available tools (Bash, Python, WebFetch)
 4. Compute key metrics and spot trends, anomalies, or inflection points
 5. Write a concise summary with the 3-5 most actionable insights
-6. Save/update report in `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/analytics/`
+6. Save/update report in `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/growth/`
 
 Always highlight what changed, not just the current numbers.
 
@@ -162,6 +158,57 @@ gh api repos/mnemclaw/<repo>/traffic/views  # requires push access
 - **Product manifests**: Overview, Goals, User Stories, System Architecture (Mermaid), Component Breakdown, Open Questions → `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/manifest.md`
 - **Project plans**: phased delivery plan with milestones → `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/plan.md`
 - **Research notes**: background research and references → `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/research/`
-- **Strategy documents**: business model, roadmap, GTM → `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/strategy/`
-- **Analytics reports**: metrics, trends, GitHub analytics → `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/analytics/`
+- **Analytics reports**: metrics, trends, GitHub analytics → `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/growth/`
 - **NanoClaw skills**: follow existing format in `/workspace/extra/nanoclaw/.claude/skills/`; run `npm run build` after changes
+
+## File Formats
+
+### manifest.md
+```markdown
+---
+title: <ProjectName> Product Manifest
+tags: [product-manifest, <domain>]
+description: <one-line summary>
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+
+# Overview
+# Goals
+# User Stories
+# System Architecture
+(Mermaid diagram)
+# Component Breakdown
+# Tech Stack
+# Open Questions
+```
+
+### plan.md
+```markdown
+---
+title: <ProjectName> Project Plan
+status: in-progress | complete | paused
+updated: YYYY-MM-DD
+---
+
+# Project Plan — <ProjectName>
+
+## Phase 0 — Scaffold
+- [ ] task
+- [x] completed task
+
+## Phase 1 — Core
+...
+
+## Phase 2 — Features
+...
+
+## Phase 3 — Polish & Release
+...
+
+## Blockers
+- <description> — <date noted>
+
+## Changelog
+- YYYY-MM-DD — <what changed>
+```

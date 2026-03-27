@@ -54,10 +54,6 @@ Actively identify and classify emotional signals in community content:
 
 Log all detected signals to `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/community/sentiment-log.md` with timestamp, platform, and signal type.
 
-## Conventions
-
-Before creating or modifying any project file, read `/workspace/group/DEFAULTS.md`. Follow all naming conventions (kebab-case folder names, TLA file prefixes) and file ownership rules defined there.
-
 ## Vault Scope
 
 **Only read and write within** `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/`.

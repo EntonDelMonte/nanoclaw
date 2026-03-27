@@ -41,10 +41,6 @@ model: qwen3.5:397b
 - Keep the skill library current, well-tested, and documented
 - Identify skill gaps in the swarm and proactively propose new skills
 
-## Conventions
-
-Before creating or modifying any project file, read `/workspace/group/DEFAULTS.md`. Follow all naming conventions and file ownership rules defined there.
-
 ## Where to Look — In Order
 
 Before writing a new skill from scratch or going online, exhaust all local sources first:
