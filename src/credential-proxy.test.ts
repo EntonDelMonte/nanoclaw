@@ -20,7 +20,11 @@ import { startCredentialProxy } from './credential-proxy.js';
 /** Start a minimal HTTP server that always responds with a fixed status + body.
  *  The handler receives the already-buffered body as the third argument. */
 function startMockServer(
-  handler: (req: http.IncomingMessage, res: http.ServerResponse, body?: string) => void,
+  handler: (
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    body?: string,
+  ) => void,
 ): Promise<{ server: http.Server; port: number }> {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
@@ -41,7 +45,9 @@ function startMockServer(
 /** OpenAI-compatible success response */
 function openAISuccess(content = 'hello from fallback'): string {
   return JSON.stringify({
-    choices: [{ message: { role: 'assistant', content }, finish_reason: 'stop' }],
+    choices: [
+      { message: { role: 'assistant', content }, finish_reason: 'stop' },
+    ],
     usage: { prompt_tokens: 10, completion_tokens: 5 },
   });
 }
@@ -256,7 +262,11 @@ describe('credential-proxy fallback', () => {
     // Anthropic returns 429
     const anthropic = await startMockServer((_req, res) => {
       res.writeHead(429, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ error: { type: 'rate_limit_error', message: 'Too many requests' } }));
+      res.end(
+        JSON.stringify({
+          error: { type: 'rate_limit_error', message: 'Too many requests' },
+        }),
+      );
     });
     anthropicServer = anthropic.server;
 
@@ -289,7 +299,10 @@ describe('credential-proxy fallback', () => {
       {
         method: 'POST',
         path: '/v1/messages',
-        headers: { 'content-type': 'application/json', 'x-api-key': 'placeholder' },
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': 'placeholder',
+        },
       },
       requestBody,
     );
@@ -324,7 +337,9 @@ describe('credential-proxy fallback', () => {
     // Anthropic returns 529 overloaded
     const anthropic = await startMockServer((_req, res) => {
       res.writeHead(529, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ type: 'error', error: { type: 'overloaded_error' } }));
+      res.end(
+        JSON.stringify({ type: 'error', error: { type: 'overloaded_error' } }),
+      );
     });
     anthropicServer = anthropic.server;
 
@@ -354,7 +369,10 @@ describe('credential-proxy fallback', () => {
         {
           name: 'get_weather',
           description: 'Get weather',
-          input_schema: { type: 'object', properties: { location: { type: 'string' } } },
+          input_schema: {
+            type: 'object',
+            properties: { location: { type: 'string' } },
+          },
         },
       ],
     });
@@ -364,7 +382,10 @@ describe('credential-proxy fallback', () => {
       {
         method: 'POST',
         path: '/v1/messages',
-        headers: { 'content-type': 'application/json', 'x-api-key': 'placeholder' },
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': 'placeholder',
+        },
       },
       requestBody,
     );
@@ -373,7 +394,14 @@ describe('credential-proxy fallback', () => {
       model: string;
       messages: Array<{ role: string; content: string }>;
       max_tokens: number;
-      tools: Array<{ type: string; function: { name: string; description: string; parameters: Record<string, unknown> } }>;
+      tools: Array<{
+        type: string;
+        function: {
+          name: string;
+          description: string;
+          parameters: Record<string, unknown>;
+        };
+      }>;
     };
 
     // Model replaced with fallback model
@@ -415,7 +443,10 @@ describe('credential-proxy fallback', () => {
                   {
                     id: 'call_abc',
                     type: 'function',
-                    function: { name: 'get_weather', arguments: '{"location":"Paris"}' },
+                    function: {
+                      name: 'get_weather',
+                      arguments: '{"location":"Paris"}',
+                    },
                   },
                 ],
               },
@@ -442,15 +473,27 @@ describe('credential-proxy fallback', () => {
       {
         method: 'POST',
         path: '/v1/messages',
-        headers: { 'content-type': 'application/json', 'x-api-key': 'placeholder' },
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': 'placeholder',
+        },
       },
-      JSON.stringify({ model: 'claude-sonnet-4-6', messages: [{ role: 'user', content: 'weather?' }], max_tokens: 100 }),
+      JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        messages: [{ role: 'user', content: 'weather?' }],
+        max_tokens: 100,
+      }),
     );
 
     expect(res.statusCode).toBe(200);
     const parsed = JSON.parse(res.body) as {
       stop_reason: string;
-      content: Array<{ type: string; id: string; name: string; input: Record<string, string> }>;
+      content: Array<{
+        type: string;
+        id: string;
+        name: string;
+        input: Record<string, string>;
+      }>;
       usage: { input_tokens: number; output_tokens: number };
     };
     expect(parsed.stop_reason).toBe('tool_use');
@@ -492,9 +535,17 @@ describe('credential-proxy fallback', () => {
       {
         method: 'POST',
         path: '/v1/messages',
-        headers: { 'content-type': 'application/json', 'x-api-key': 'placeholder' },
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': 'placeholder',
+        },
       },
-      JSON.stringify({ model: 'claude-sonnet-4-6', messages: [{ role: 'user', content: 'hi' }], max_tokens: 10, stream: true }),
+      JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        messages: [{ role: 'user', content: 'hi' }],
+        max_tokens: 10,
+        stream: true,
+      }),
     );
 
     expect(res.statusCode).toBe(200);
@@ -523,14 +574,11 @@ describe('credential-proxy fallback', () => {
     proxyServer = await startCredentialProxy(0);
     proxyPort = (proxyServer.address() as AddressInfo).port;
 
-    const res = await makeRequest(
-      proxyPort,
-      {
-        method: 'GET',
-        path: '/v1/models',
-        headers: { 'x-api-key': 'placeholder' },
-      },
-    );
+    const res = await makeRequest(proxyPort, {
+      method: 'GET',
+      path: '/v1/models',
+      headers: { 'x-api-key': 'placeholder' },
+    });
 
     expect(res.statusCode).toBe(200);
     const parsed = JSON.parse(res.body) as { models: unknown[] };
@@ -557,9 +605,16 @@ describe('credential-proxy fallback', () => {
       {
         method: 'POST',
         path: '/v1/messages',
-        headers: { 'content-type': 'application/json', 'x-api-key': 'placeholder' },
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': 'placeholder',
+        },
       },
-      JSON.stringify({ model: 'claude-sonnet-4-6', messages: [], max_tokens: 10 }),
+      JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        messages: [],
+        max_tokens: 10,
+      }),
     );
 
     // Should return the Anthropic error as-is

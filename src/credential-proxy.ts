@@ -56,7 +56,9 @@ const DEFAULT_FALLBACK_PROVIDERS: FallbackProvider[] = [
   },
 ];
 
-function buildFallbackProviders(secrets: Record<string, string>): FallbackProvider[] {
+function buildFallbackProviders(
+  secrets: Record<string, string>,
+): FallbackProvider[] {
   return DEFAULT_FALLBACK_PROVIDERS.map((p) => {
     // Allow test/config override via <NAME>_BASE_URL env var
     const baseUrlKey = p.name.toUpperCase() + '_BASE_URL';
@@ -92,7 +94,11 @@ function isQuotaError(statusCode: number, body: string): boolean {
 interface AnthropicTool {
   name: string;
   description?: string;
-  input_schema: { type: string; properties?: Record<string, unknown>; [key: string]: unknown };
+  input_schema: {
+    type: string;
+    properties?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
 }
 
 interface OpenAITool {
@@ -100,13 +106,22 @@ interface OpenAITool {
   function: {
     name: string;
     description?: string;
-    parameters: { type: string; properties?: Record<string, unknown>; [key: string]: unknown };
+    parameters: {
+      type: string;
+      properties?: Record<string, unknown>;
+      [key: string]: unknown;
+    };
   };
 }
 
 type AnthropicContentBlock =
   | { type: 'text'; text: string }
-  | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+  | {
+      type: 'tool_use';
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+    }
   | { type: 'tool_result'; tool_use_id: string; content: string }
   | { type: string; [key: string]: unknown };
 
@@ -178,10 +193,17 @@ function translateMessagesToOpenAI(
     const toolResults = blocks.filter((b) => b.type === 'tool_result');
     if (toolResults.length > 0) {
       for (const block of toolResults) {
-        const tr = block as { type: 'tool_result'; tool_use_id: string; content: string };
+        const tr = block as {
+          type: 'tool_result';
+          tool_use_id: string;
+          content: string;
+        };
         result.push({
           role: 'tool',
-          content: typeof tr.content === 'string' ? tr.content : JSON.stringify(tr.content),
+          content:
+            typeof tr.content === 'string'
+              ? tr.content
+              : JSON.stringify(tr.content),
           tool_call_id: tr.tool_use_id,
         });
       }
@@ -190,8 +212,13 @@ function translateMessagesToOpenAI(
 
     // Assistant message — may contain text + tool_use blocks
     if (msg.role === 'assistant') {
-      const textBlocks = blocks.filter((b) => b.type === 'text') as Array<{ type: 'text'; text: string }>;
-      const toolUseBlocks = blocks.filter((b) => b.type === 'tool_use') as Array<{
+      const textBlocks = blocks.filter((b) => b.type === 'text') as Array<{
+        type: 'text';
+        text: string;
+      }>;
+      const toolUseBlocks = blocks.filter(
+        (b) => b.type === 'tool_use',
+      ) as Array<{
         type: 'tool_use';
         id: string;
         name: string;
@@ -200,7 +227,8 @@ function translateMessagesToOpenAI(
 
       const openAIMsg: OpenAIMessage = {
         role: 'assistant',
-        content: textBlocks.length > 0 ? textBlocks.map((b) => b.text).join('') : null,
+        content:
+          textBlocks.length > 0 ? textBlocks.map((b) => b.text).join('') : null,
       };
 
       if (toolUseBlocks.length > 0) {
@@ -301,7 +329,10 @@ function translateOpenAIToAnthropic(
     for (const tc of message.tool_calls) {
       let parsedInput: Record<string, unknown> = {};
       try {
-        parsedInput = JSON.parse(tc.function.arguments) as Record<string, unknown>;
+        parsedInput = JSON.parse(tc.function.arguments) as Record<
+          string,
+          unknown
+        >;
       } catch {
         parsedInput = { _raw: tc.function.arguments };
       }
@@ -443,7 +474,9 @@ async function streamOpenAIToAnthropic(
           index: 0,
           delta: { type: 'text_delta', text: delta.content },
         });
-        anthropicResponse.write(`event: content_block_delta\ndata: ${textDelta}\n\n`);
+        anthropicResponse.write(
+          `event: content_block_delta\ndata: ${textDelta}\n\n`,
+        );
         outputTokenCount += Math.ceil(delta.content.length / 4); // rough estimate
       }
 
@@ -452,7 +485,11 @@ async function streamOpenAIToAnthropic(
         for (const tc of delta.tool_calls) {
           const idx = tc.index;
           if (!toolAccumulators.has(idx)) {
-            toolAccumulators.set(idx, { id: tc.id ?? '', name: tc.function?.name ?? '', arguments: '' });
+            toolAccumulators.set(idx, {
+              id: tc.id ?? '',
+              name: tc.function?.name ?? '',
+              arguments: '',
+            });
           }
           const acc = toolAccumulators.get(idx)!;
           if (tc.id) acc.id = tc.id;
@@ -478,7 +515,12 @@ async function streamOpenAIToAnthropic(
       `event: content_block_start\ndata: ${JSON.stringify({
         type: 'content_block_start',
         index: blockIdx,
-        content_block: { type: 'tool_use', id: acc.id, name: acc.name, input: {} },
+        content_block: {
+          type: 'tool_use',
+          id: acc.id,
+          name: acc.name,
+          input: {},
+        },
       })}\n\n`,
     );
     // Emit input_json_delta
@@ -524,7 +566,12 @@ function makeHttpRequest(
   method: string,
   headers: Record<string, string>,
   body: Buffer,
-): Promise<{ statusCode: number; headers: Record<string, string>; body: Buffer; stream: NodeJS.ReadableStream }> {
+): Promise<{
+  statusCode: number;
+  headers: Record<string, string>;
+  body: Buffer;
+  stream: NodeJS.ReadableStream;
+}> {
   return new Promise((resolve, reject) => {
     const isHttps = url.protocol === 'https:';
     const requestFn = isHttps ? httpsRequest : httpRequest;
@@ -562,7 +609,11 @@ function makeHttpRequestStream(
   method: string,
   headers: Record<string, string>,
   body: Buffer,
-): Promise<{ statusCode: number; responseHeaders: Record<string, string | string[] | undefined>; stream: import('http').IncomingMessage }> {
+): Promise<{
+  statusCode: number;
+  responseHeaders: Record<string, string | string[] | undefined>;
+  stream: import('http').IncomingMessage;
+}> {
   return new Promise((resolve, reject) => {
     const isHttps = url.protocol === 'https:';
     const requestFn = isHttps ? httpsRequest : httpRequest;
@@ -578,7 +629,10 @@ function makeHttpRequestStream(
       (res) => {
         resolve({
           statusCode: res.statusCode ?? 0,
-          responseHeaders: res.headers as Record<string, string | string[] | undefined>,
+          responseHeaders: res.headers as Record<
+            string,
+            string | string[] | undefined
+          >,
           stream: res,
         });
       },
@@ -676,7 +730,10 @@ export function startCredentialProxy(
             },
           );
           upstream.on('error', (err) => {
-            logger.error({ err, url: req.url }, 'Credential proxy upstream error');
+            logger.error(
+              { err, url: req.url },
+              'Credential proxy upstream error',
+            );
             if (!res.headersSent) {
               res.writeHead(502);
               res.end('Bad Gateway');
@@ -692,11 +749,29 @@ export function startCredentialProxy(
         try {
           if (isStreaming) {
             await handleStreamingWithFallback(
-              req, res, body, headers, upstreamUrl, isHttps, makeRequest, secrets, authMode, fallbackProviders,
+              req,
+              res,
+              body,
+              headers,
+              upstreamUrl,
+              isHttps,
+              makeRequest,
+              secrets,
+              authMode,
+              fallbackProviders,
             );
           } else {
             await handleNonStreamingWithFallback(
-              req, res, body, headers, upstreamUrl, isHttps, makeRequest, secrets, authMode, fallbackProviders,
+              req,
+              res,
+              body,
+              headers,
+              upstreamUrl,
+              isHttps,
+              makeRequest,
+              secrets,
+              authMode,
+              fallbackProviders,
             );
           }
         } catch (err) {
@@ -754,7 +829,10 @@ async function handleNonStreamingWithFallback(
         upRes.on('end', () => {
           anthropicStatusCode = upRes.statusCode!;
           anthropicBody = Buffer.concat(chunks);
-          anthropicHeaders = upRes.headers as Record<string, string | string[] | undefined>;
+          anthropicHeaders = upRes.headers as Record<
+            string,
+            string | string[] | undefined
+          >;
           resolve();
         });
         upRes.on('error', reject);
@@ -793,13 +871,22 @@ async function handleNonStreamingWithFallback(
   for (const provider of fallbackProviders) {
     const apiKey = allSecrets[provider.apiKeyEnv];
     if (!apiKey) {
-      logger.warn({ provider: provider.name }, 'No API key configured, skipping fallback');
+      logger.warn(
+        { provider: provider.name },
+        'No API key configured, skipping fallback',
+      );
       continue;
     }
 
-    logger.warn({ provider: provider.name, model: provider.model }, 'Claude quota hit — falling back');
+    logger.warn(
+      { provider: provider.name, model: provider.model },
+      'Claude quota hit — falling back',
+    );
 
-    const openAIBody = translateAnthropicToOpenAI(anthropicRequest, provider.model);
+    const openAIBody = translateAnthropicToOpenAI(
+      anthropicRequest,
+      provider.model,
+    );
     const openAIBodyBuf = Buffer.from(JSON.stringify(openAIBody), 'utf8');
     const providerUrl = new URL(`${provider.baseUrl}/chat/completions`);
 
@@ -823,8 +910,14 @@ async function handleNonStreamingWithFallback(
       if (result.statusCode >= 200 && result.statusCode < 300) {
         // Translate OpenAI response to Anthropic format
         const openAIResponse = JSON.parse(resultBodyStr) as OpenAIResponse;
-        const anthropicTranslated = translateOpenAIToAnthropic(openAIResponse, provider.model);
-        const translatedBuf = Buffer.from(JSON.stringify(anthropicTranslated), 'utf8');
+        const anthropicTranslated = translateOpenAIToAnthropic(
+          openAIResponse,
+          provider.model,
+        );
+        const translatedBuf = Buffer.from(
+          JSON.stringify(anthropicTranslated),
+          'utf8',
+        );
 
         res.writeHead(200, {
           'content-type': 'application/json',
@@ -834,9 +927,15 @@ async function handleNonStreamingWithFallback(
         return;
       }
 
-      logger.warn({ provider: provider.name, statusCode: result.statusCode }, 'Fallback provider failed');
+      logger.warn(
+        { provider: provider.name, statusCode: result.statusCode },
+        'Fallback provider failed',
+      );
     } catch (err) {
-      logger.error({ err, provider: provider.name }, 'Fallback provider request error');
+      logger.error(
+        { err, provider: provider.name },
+        'Fallback provider request error',
+      );
     }
   }
 
@@ -878,7 +977,10 @@ async function handleStreamingWithFallback(
       (upRes) => {
         resolve({
           statusCode: upRes.statusCode ?? 0,
-          responseHeaders: upRes.headers as Record<string, string | string[] | undefined>,
+          responseHeaders: upRes.headers as Record<
+            string,
+            string | string[] | undefined
+          >,
           stream: upRes,
         });
       },
@@ -926,29 +1028,39 @@ async function handleStreamingWithFallback(
   for (const provider of fallbackProviders) {
     const apiKey = allSecrets[provider.apiKeyEnv];
     if (!apiKey) {
-      logger.warn({ provider: provider.name }, 'No API key configured, skipping fallback');
+      logger.warn(
+        { provider: provider.name },
+        'No API key configured, skipping fallback',
+      );
       continue;
     }
 
-    logger.warn({ provider: provider.name, model: provider.model }, 'Claude quota hit — falling back');
+    logger.warn(
+      { provider: provider.name, model: provider.model },
+      'Claude quota hit — falling back',
+    );
 
-    const openAIBody = translateAnthropicToOpenAI(anthropicRequest, provider.model);
+    const openAIBody = translateAnthropicToOpenAI(
+      anthropicRequest,
+      provider.model,
+    );
     // Ensure stream is true for the fallback too
     openAIBody.stream = true;
     const openAIBodyBuf = Buffer.from(JSON.stringify(openAIBody), 'utf8');
     const providerUrl = new URL(`${provider.baseUrl}/chat/completions`);
 
     try {
-      const { statusCode: fallbackStatus, stream: fallbackStream } = await makeHttpRequestStream(
-        providerUrl,
-        'POST',
-        {
-          'content-type': 'application/json',
-          authorization: `Bearer ${apiKey}`,
-          accept: 'text/event-stream',
-        },
-        openAIBodyBuf,
-      );
+      const { statusCode: fallbackStatus, stream: fallbackStream } =
+        await makeHttpRequestStream(
+          providerUrl,
+          'POST',
+          {
+            'content-type': 'application/json',
+            authorization: `Bearer ${apiKey}`,
+            accept: 'text/event-stream',
+          },
+          openAIBodyBuf,
+        );
 
       if (fallbackStatus >= 200 && fallbackStatus < 300) {
         // Translate OpenAI SSE stream to Anthropic SSE stream
@@ -967,9 +1079,15 @@ async function handleStreamingWithFallback(
         fallbackStream.on('data', () => undefined);
         fallbackStream.on('end', resolve);
       });
-      logger.warn({ provider: provider.name, statusCode: fallbackStatus }, 'Fallback provider stream failed');
+      logger.warn(
+        { provider: provider.name, statusCode: fallbackStatus },
+        'Fallback provider stream failed',
+      );
     } catch (err) {
-      logger.error({ err, provider: provider.name }, 'Fallback provider stream error');
+      logger.error(
+        { err, provider: provider.name },
+        'Fallback provider stream error',
+      );
     }
   }
 

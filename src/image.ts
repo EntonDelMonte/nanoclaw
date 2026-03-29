@@ -31,7 +31,12 @@ function downloadBuffer(url: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const get = url.startsWith('https') ? https.get : http.get;
     get(url, (res) => {
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+      if (
+        res.statusCode &&
+        res.statusCode >= 300 &&
+        res.statusCode < 400 &&
+        res.headers.location
+      ) {
         // Follow one redirect
         downloadBuffer(res.headers.location).then(resolve).catch(reject);
         res.resume();
@@ -87,10 +92,17 @@ export function downloadToFile(url: string, destPath: string): Promise<void> {
     const file = fs.createWriteStream(destPath);
     const get = url.startsWith('https') ? https.get : http.get;
     get(url, (res) => {
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+      if (
+        res.statusCode &&
+        res.statusCode >= 300 &&
+        res.statusCode < 400 &&
+        res.headers.location
+      ) {
         file.close();
         fs.unlink(destPath, () => {});
-        downloadToFile(res.headers.location, destPath).then(resolve).catch(reject);
+        downloadToFile(res.headers.location, destPath)
+          .then(resolve)
+          .catch(reject);
         res.resume();
         return;
       }

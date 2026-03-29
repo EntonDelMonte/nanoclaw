@@ -333,7 +333,11 @@ export class TelegramChannel implements Channel {
         const downloadUrl = `https://api.telegram.org/file/bot${this.botToken}/${file.file_path}`;
         const ext = path.extname(file.file_path) || '.jpg';
         const filename = `photo_${photo.file_id}${ext}`;
-        const attachmentsDir = path.join(GROUPS_DIR, group.folder, 'attachments');
+        const attachmentsDir = path.join(
+          GROUPS_DIR,
+          group.folder,
+          'attachments',
+        );
         fs.mkdirSync(attachmentsDir, { recursive: true });
         const localPath = path.join(attachmentsDir, filename);
 
@@ -356,7 +360,13 @@ export class TelegramChannel implements Channel {
           'Unknown';
         const isGroup =
           ctx.chat.type === 'group' || ctx.chat.type === 'supergroup';
-        this.opts.onChatMetadata(chatJid, timestamp, undefined, 'telegram', isGroup);
+        this.opts.onChatMetadata(
+          chatJid,
+          timestamp,
+          undefined,
+          'telegram',
+          isGroup,
+        );
         this.opts.onMessage(chatJid, {
           id: ctx.message.message_id.toString(),
           chat_jid: chatJid,
@@ -368,7 +378,10 @@ export class TelegramChannel implements Channel {
         });
         logger.info({ chatJid, filename }, 'Telegram photo stored');
       } catch (err) {
-        logger.error({ err }, 'Failed to process Telegram photo, falling back to placeholder');
+        logger.error(
+          { err },
+          'Failed to process Telegram photo, falling back to placeholder',
+        );
         storeNonText(ctx, '[Photo]');
       }
     });
@@ -415,19 +428,34 @@ export class TelegramChannel implements Channel {
             const downloadUrl = `https://api.telegram.org/file/bot${this.botToken}/${file.file_path}`;
             const ext = path.extname(name) || '.jpg';
             const filename = `photo_${doc.file_id}${ext}`;
-            const attachmentsDir = path.join(GROUPS_DIR, group.folder, 'attachments');
+            const attachmentsDir = path.join(
+              GROUPS_DIR,
+              group.folder,
+              'attachments',
+            );
             fs.mkdirSync(attachmentsDir, { recursive: true });
             const localPath = path.join(attachmentsDir, filename);
             const processed = await processImage(downloadUrl);
-            fs.writeFileSync(localPath, Buffer.from(processed.base64, 'base64'));
-            const caption = ctx.message.caption ? ` ${ctx.message.caption}` : '';
+            fs.writeFileSync(
+              localPath,
+              Buffer.from(processed.base64, 'base64'),
+            );
+            const caption = ctx.message.caption
+              ? ` ${ctx.message.caption}`
+              : '';
             const content = `[Photo: /workspace/group/attachments/${filename}]${caption}`;
-            logger.info({ chatJid, filename }, 'Telegram image document stored');
+            logger.info(
+              { chatJid, filename },
+              'Telegram image document stored',
+            );
             storeNonText(ctx, content);
             return;
           }
         } catch (err) {
-          logger.error({ err, name }, 'Failed to process Telegram image document');
+          logger.error(
+            { err, name },
+            'Failed to process Telegram image document',
+          );
         }
       }
 
