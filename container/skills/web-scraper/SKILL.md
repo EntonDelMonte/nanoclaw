@@ -418,8 +418,8 @@ Always save to a deterministic path so the agent can reference it later.
 
 | Target | Path pattern |
 |--------|-------------|
+| Scraper vault (default) | `/workspace/extra/obsidian/MnemClaw/scraper/<slug>-YYYY-MM-DD.md` |
 | Group workspace | `/workspace/group/<slug>-YYYY-MM-DD.json` |
-| Project vault | `/workspace/extra/obsidian/MnemClaw/projects/<project>/research/<TLA>-scrape-YYYY-MM-DD.md` |
 | Temporary / one-off | `/workspace/group/scrape-<timestamp>.txt` |
 
 ```bash
@@ -429,10 +429,12 @@ python3 /workspace/group/bulk_scrape.py
 # script writes to OUTPUT_JSON defined inside
 ```
 
-To save a Markdown note to the vault:
+To save a Markdown note to the scraper vault:
 
 ```bash
-cat > /workspace/extra/obsidian/MnemClaw/projects/my-project/research/MYP-scrape-2026-03-27.md << 'EOF'
+DATE=$(date +%Y-%m-%d)
+mkdir -p /workspace/extra/obsidian/MnemClaw/scraper
+cat > /workspace/extra/obsidian/MnemClaw/scraper/example-site-${DATE}.md << 'EOF'
 ---
 title: Web Scrape — Example Site
 date: 2026-03-27
