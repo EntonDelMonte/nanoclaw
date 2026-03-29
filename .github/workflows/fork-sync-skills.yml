@@ -14,7 +14,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
 
 concurrency:
   group: fork-sync
@@ -32,7 +31,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Configure git
@@ -54,13 +53,31 @@ jobs:
             exit 0
           fi
 
-          # Merge upstream main into fork's main
-          if ! git merge upstream/main --no-edit; then
-            echo "::error::Failed to merge upstream/main into fork main — conflicts detected"
-            git merge --abort
-            echo "synced=false" >> "$GITHUB_OUTPUT"
-            echo "sync_failed=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          # Attempt merge upstream main into fork's main
+          if git merge upstream/main --no-edit; then
+            MERGED=true
+          else
+            # Auto-resolve known conflict patterns:
+            # package-lock.json: always take ours (fork manages its own lockfile)
+            if git diff --name-only --diff-filter=U | grep -q "package-lock.json"; then
+              git checkout --ours package-lock.json
+              git add package-lock.json
+            fi
+
+            # For any remaining unresolved files, abort and report
+            if git diff --name-only --diff-filter=U | grep -qv "package-lock.json"; then
+              CONFLICTS=$(git diff --name-only --diff-filter=U | grep -v "package-lock.json" | tr '\n' ' ')
+              echo "::error::Merge conflict in: $CONFLICTS — manual resolution required"
+              git merge --abort
+              echo "synced=false" >> "$GITHUB_OUTPUT"
+              echo "sync_failed=true" >> "$GITHUB_OUTPUT"
+              echo "conflicts=$CONFLICTS" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            # All conflicts were auto-resolved
+            git commit --no-edit
+            MERGED=true
           fi
 
           # Validate build
@@ -151,58 +168,35 @@ jobs:
           echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
           echo "succeeded=$SUCCEEDED" >> "$GITHUB_OUTPUT"
 
-      - name: Open issue for upstream sync failure
+      - name: Report sync failure in job summary
         if: steps.sync.outputs.sync_failed == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Upstream sync failed — merge conflict or build failure`,
-              body: [
-                'The automated sync with `qwibitai/nanoclaw` main failed.',
-                '',
-                'This usually means upstream made changes that conflict with this fork\'s channel code.',
-                '',
-                'To resolve manually:',
-                '```bash',
-                'git fetch upstream main',
-                'git merge upstream/main',
-                '# resolve conflicts',
-                'npm run build && npm test',
-                'git push',
-                '```',
-              ].join('\n'),
-              labels: ['upstream-sync']
-            });
+        run: |
+          CONFLICTS="${{ steps.sync.outputs.conflicts }}"
+          echo "## Upstream sync failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$CONFLICTS" ]; then
+            echo "Merge conflicts in: \`$CONFLICTS\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Build or test failure after merging upstream/main." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**To resolve manually:**" >> "$GITHUB_STEP_SUMMARY"
+          echo '```bash' >> "$GITHUB_STEP_SUMMARY"
+          echo 'git fetch upstream main' >> "$GITHUB_STEP_SUMMARY"
+          echo 'git merge upstream/main' >> "$GITHUB_STEP_SUMMARY"
+          echo '# resolve conflicts' >> "$GITHUB_STEP_SUMMARY"
+          echo 'npm run build && npm test' >> "$GITHUB_STEP_SUMMARY"
+          echo 'git push' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Open issue for failed skill merges
+      - name: Report failed skill merges in job summary
         if: steps.merge.outputs.failed != ''
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const failed = '${{ steps.merge.outputs.failed }}'.trim().split(/\s+/);
-            const body = [
-              `The merge-forward workflow failed to merge \`main\` into the following skill branches:`,
-              '',
-              ...failed.map(s => `- \`skill/${s}\`: merge conflict, build failure, or test failure`),
-              '',
-              'Please resolve manually:',
-              '```bash',
-              ...failed.map(s => [
-                `git checkout skill/${s}`,
-                `git merge main`,
-                `# resolve conflicts, then: git push`,
-                ''
-              ]).flat(),
-              '```',
-            ].join('\n');
-
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Merge-forward failed for ${failed.length} skill branch(es)`,
-              body,
-              labels: ['skill-maintenance']
-            });
+        run: |
+          FAILED="${{ steps.merge.outputs.failed }}"
+          echo "## Skill branch merge-forward failures" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          for SKILL in $FAILED; do
+            echo "- \`skill/$SKILL\`" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Resolve manually: \`git checkout skill/NAME && git merge main\`" >> "$GITHUB_STEP_SUMMARY"
