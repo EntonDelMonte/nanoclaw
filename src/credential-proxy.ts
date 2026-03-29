@@ -12,8 +12,8 @@
  *
  * Fallback chain (triggered on Anthropic 429 / 529 / overloaded_error):
  *   1. Anthropic (primary)
- *   2. Mammouth — deepseek-v3.1-terminus (OpenAI-compatible)
- *   3. Ollama cloud — deepseek-v3.2 (OpenAI-compatible)
+ *   2. Ollama cloud — llama4-maverick (OpenAI-compatible, api.ollama.com)
+ *   3. Mammouth — deepseek-v3.1-terminus (OpenAI-compatible)
  */
 import { createServer, Server } from 'http';
 import { request as httpsRequest } from 'https';
@@ -43,16 +43,16 @@ interface FallbackProvider {
 // (MAMMOUTH_BASE_URL / OLLAMA_BASE_URL) to allow test substitution.
 const DEFAULT_FALLBACK_PROVIDERS: FallbackProvider[] = [
   {
+    name: 'Ollama',
+    baseUrl: 'https://ollama.com/v1',
+    model: 'deepseek-v3.1:671b',
+    apiKeyEnv: 'OLLAMA_API_KEY',
+  },
+  {
     name: 'Mammouth',
     baseUrl: 'https://api.mammouth.ai/v1',
     model: 'deepseek-v3.1-terminus',
     apiKeyEnv: 'MAMMOUTH_API_KEY',
-  },
-  {
-    name: 'Ollama',
-    baseUrl: 'https://ollama.com/v1',
-    model: 'deepseek-v3.2',
-    apiKeyEnv: 'OLLAMA_API_KEY',
   },
 ];
 

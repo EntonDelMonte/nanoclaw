@@ -378,6 +378,23 @@ function waitForIpcMessage(): Promise<string | null> {
 }
 
 /**
+ * Detect whether an error string indicates Claude quota exhaustion.
+ * The SDK fires `rate_limit_event` before making HTTP requests on MAX plan,
+ * so the credential proxy never sees it — we detect it here instead.
+ */
+function isQuotaError(text: string): boolean {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("hit your limit") ||
+    lower.includes("rate_limit") ||
+    lower.includes("rate limit exceeded") ||
+    lower.includes("quota exceeded") ||
+    (lower.includes("limit") && lower.includes("reset"))
+  );
+}
+
+/**
  * Run a single query and stream results via writeOutput.
  * Uses MessageStream (AsyncIterable) to keep isSingleUserTurn=false,
  * allowing agent teams subagents to run to completion.
@@ -390,7 +407,7 @@ async function runQuery(
   containerInput: ContainerInput,
   sdkEnv: Record<string, string | undefined>,
   resumeAt?: string,
-): Promise<{ newSessionId?: string; lastAssistantUuid?: string; closedDuringQuery: boolean }> {
+): Promise<{ newSessionId?: string; lastAssistantUuid?: string; closedDuringQuery: boolean; quotaExhausted: boolean }> {
   const stream = new MessageStream();
   stream.push(prompt);
 
@@ -419,6 +436,7 @@ async function runQuery(
   let lastAssistantUuid: string | undefined;
   let messageCount = 0;
   let resultCount = 0;
+  let quotaExhausted = false;
 
   // Load global CLAUDE.md as additional system context (shared across all groups)
   const globalClaudeMdPath = '/workspace/global/CLAUDE.md';
@@ -506,21 +524,38 @@ async function runQuery(
       log(`Task notification: task=${tn.task_id} status=${tn.status} summary=${tn.summary}`);
     }
 
+    // Detect SDK-level quota exhaustion (fires as rate_limit system message or
+    // error_during_operation result before any HTTP request is made on MAX plan)
+    if (message.type === 'system' && (message as { subtype?: string }).subtype === 'rate_limit') {
+      log('SDK rate_limit event — Claude quota exhausted');
+      quotaExhausted = true;
+      stream.end();
+    }
+
     if (message.type === 'result') {
       resultCount++;
       const textResult = 'result' in message ? (message as { result?: string }).result : null;
-      log(`Result #${resultCount}: subtype=${message.subtype}${textResult ? ` text=${textResult.slice(0, 200)}` : ''}`);
-      writeOutput({
-        status: 'success',
-        result: textResult || null,
-        newSessionId
-      });
+      const subtype = message.subtype ?? '';
+      log(`Result #${resultCount}: subtype=${subtype}${textResult ? ` text=${textResult.slice(0, 200)}` : ''}`);
+
+      // Check result for quota error signals (subtype can't be 'rate_limit' per SDK types,
+      // but the result text itself may contain quota error messages)
+      if (!quotaExhausted && (isQuotaError(textResult || '') || isQuotaError(subtype))) {
+        log('Quota error detected in result — marking for fallback');
+        quotaExhausted = true;
+      } else {
+        writeOutput({
+          status: 'success',
+          result: textResult || null,
+          newSessionId
+        });
+      }
     }
   }
 
   ipcPolling = false;
-  log(`Query done. Messages: ${messageCount}, results: ${resultCount}, lastAssistantUuid: ${lastAssistantUuid || 'none'}, closedDuringQuery: ${closedDuringQuery}`);
-  return { newSessionId, lastAssistantUuid, closedDuringQuery };
+  log(`Query done. Messages: ${messageCount}, results: ${resultCount}, lastAssistantUuid: ${lastAssistantUuid || 'none'}, closedDuringQuery: ${closedDuringQuery}, quotaExhausted: ${quotaExhausted}`);
+  return { newSessionId, lastAssistantUuid, closedDuringQuery, quotaExhausted };
 }
 
 async function main(): Promise<void> {
@@ -564,18 +599,58 @@ async function main(): Promise<void> {
     prompt += '\n' + pending.join('\n');
   }
 
+  // Fallback provider chain for SDK-level quota exhaustion.
+  // When Claude MAX plan fires rate_limit_event, no HTTP request is made so the
+  // credential proxy never sees it. We detect it here and switch provider directly.
+  const fallbackChain: Array<{ name: string; baseUrl: string; model: string; keyEnv: string }> = [
+    { name: 'Ollama', baseUrl: 'https://ollama.com/v1', model: 'deepseek-v3.1:671b', keyEnv: 'OLLAMA_API_KEY' },
+    { name: 'Mammouth', baseUrl: 'https://api.mammouth.ai/v1', model: 'deepseek-v3.1-terminus', keyEnv: 'MAMMOUTH_API_KEY' },
+  ];
+  let fallbackIndex = 0;
+
   // Query loop: run query → wait for IPC message → run new query → repeat
   let resumeAt: string | undefined;
+  let currentPrompt = prompt;
   try {
     while (true) {
       log(`Starting query (session: ${sessionId || 'new'}, resumeAt: ${resumeAt || 'latest'})...`);
 
-      const queryResult = await runQuery(prompt, sessionId, mcpServerPath, containerInput, sdkEnv, resumeAt);
+      const queryResult = await runQuery(currentPrompt, sessionId, mcpServerPath, containerInput, sdkEnv, resumeAt);
       if (queryResult.newSessionId) {
         sessionId = queryResult.newSessionId;
       }
       if (queryResult.lastAssistantUuid) {
         resumeAt = queryResult.lastAssistantUuid;
+      }
+
+      // Handle SDK-level quota exhaustion by switching to next fallback provider
+      if (queryResult.quotaExhausted) {
+        let switched = false;
+        while (fallbackIndex < fallbackChain.length) {
+          const fb = fallbackChain[fallbackIndex++];
+          const apiKey = process.env[fb.keyEnv];
+          if (apiKey) {
+            log(`Quota exhausted — switching to ${fb.name} (${fb.model})`);
+            sdkEnv['ANTHROPIC_BASE_URL'] = fb.baseUrl;
+            sdkEnv['ANTHROPIC_API_KEY'] = apiKey;
+            delete sdkEnv['CLAUDE_CODE_OAUTH_TOKEN'];
+            // Cannot resume session across model providers — start fresh
+            sessionId = undefined;
+            resumeAt = undefined;
+            switched = true;
+            break;
+          }
+          log(`Quota exhausted but no API key for ${fb.name} (${fb.keyEnv}), trying next`);
+        }
+        if (switched) continue;
+        log('All fallback providers exhausted or unconfigured');
+        writeOutput({
+          status: 'error',
+          result: null,
+          newSessionId: sessionId,
+          error: 'Claude quota exhausted and no fallback providers available'
+        });
+        process.exit(1);
       }
 
       // If _close was consumed during the query, exit immediately.
@@ -599,11 +674,19 @@ async function main(): Promise<void> {
       }
 
       log(`Got new message (${nextMessage.length} chars), starting new query`);
-      prompt = nextMessage;
+      currentPrompt = nextMessage;
     }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     log(`Agent error: ${errorMessage}`);
+    // Last-chance quota detection for errors thrown out of runQuery
+    if (isQuotaError(errorMessage) && fallbackIndex < fallbackChain.length) {
+      const fb = fallbackChain[fallbackIndex++];
+      const apiKey = process.env[fb.keyEnv];
+      if (apiKey) {
+        log(`Quota error caught — this should have been handled inside runQuery. Consider updating isQuotaError().`);
+      }
+    }
     writeOutput({
       status: 'error',
       result: null,

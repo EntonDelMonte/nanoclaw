@@ -137,7 +137,7 @@ function buildVolumeMounts(
         {
           env: {
             // Enable agent swarms (subagent orchestration)
-            // https://code.claude.com/docs/en/agent-teams#orchestrate-teams-of-claude-code-sessions
+            // https://code.claude.com/docs/en/agent-teams#orchestrate-agent-teams
             CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
             // Load CLAUDE.md from additional mounted directories
             // https://code.claude.com/docs/en/memory#load-memory-from-additional-directories
@@ -151,6 +151,22 @@ function buildVolumeMounts(
         2,
       ) + '\n',
     );
+  }
+
+  // Inject API keys from host process.env into each group's settings.json.
+  // Sourced from .env (single source of truth) — never hardcoded in settings files.
+  const HOST_ENV_KEYS = ['MAMMOUTH_API_KEY'];
+  const hostEnvToInject = HOST_ENV_KEYS.reduce<Record<string, string>>(
+    (acc, key) => {
+      if (process.env[key]) acc[key] = process.env[key]!;
+      return acc;
+    },
+    {},
+  );
+  if (Object.keys(hostEnvToInject).length > 0) {
+    const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
+    settings.env = { ...settings.env, ...hostEnvToInject };
+    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
   }
 
   // Sync skills from container/skills/ into each group's .claude/skills/
@@ -228,21 +244,39 @@ function buildContainerArgs(
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
 
-  // Route API traffic through the credential proxy (containers never see real secrets)
-  args.push(
-    '-e',
-    `ANTHROPIC_BASE_URL=http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
-  );
-
-  // Mirror the host's auth method with a placeholder value.
-  // API key mode: SDK sends x-api-key, proxy replaces with real key.
-  // OAuth mode:   SDK exchanges placeholder token for temp API key,
-  //               proxy injects real OAuth token on that exchange request.
-  const authMode = detectAuthMode();
-  if (authMode === 'api-key') {
-    args.push('-e', 'ANTHROPIC_API_KEY=placeholder');
+  // TEST MODE: bypass credential proxy and route directly to Ollama.
+  // Set NANOCLAW_TEST_PROVIDER=ollama in .env to activate.
+  // Remove after testing.
+  if (process.env.NANOCLAW_TEST_PROVIDER === 'ollama' && process.env.OLLAMA_API_KEY) {
+    args.push('-e', `ANTHROPIC_BASE_URL=https://ollama.com/v1`);
+    args.push('-e', `ANTHROPIC_API_KEY=${process.env.OLLAMA_API_KEY}`);
   } else {
-    args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
+    // Route API traffic through the credential proxy (containers never see real secrets)
+    args.push(
+      '-e',
+      `ANTHROPIC_BASE_URL=http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
+    );
+
+    // Mirror the host's auth method with a placeholder value.
+    // API key mode: SDK sends x-api-key, proxy replaces with real key.
+    // OAuth mode:   SDK exchanges placeholder token for temp API key,
+    //               proxy injects real OAuth token on that exchange request.
+    const authMode = detectAuthMode();
+    if (authMode === 'api-key') {
+      args.push('-e', 'ANTHROPIC_API_KEY=placeholder');
+    } else {
+      args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
+    }
+  }
+
+  // Inject fallback provider keys so the agent-runner can switch providers
+  // if the primary Claude quota is exhausted at the SDK level (rate_limit_event).
+  // These are read from the host's .env — never hardcoded here.
+  if (process.env.OLLAMA_API_KEY) {
+    args.push('-e', `OLLAMA_API_KEY=${process.env.OLLAMA_API_KEY}`);
+  }
+  if (process.env.MAMMOUTH_API_KEY) {
+    args.push('-e', `MAMMOUTH_API_KEY=${process.env.MAMMOUTH_API_KEY}`);
   }
 
   // Runtime-specific args for host gateway resolution
