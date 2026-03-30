@@ -416,36 +416,38 @@ python3 /workspace/group/bulk_scrape.py
 
 Always save to a deterministic path so the agent can reference it later.
 
+### Vault folder structure (always use this)
+
+Scraped data lives under `/workspace/extra/obsidian/MnemClaw/scrapes/` with the **target website as a subfolder**, and individual scraped units as files beneath it:
+
+```
+/workspace/extra/obsidian/MnemClaw/scrapes/
+├── onedoc/
+│   ├── MAP.md
+│   ├── dr-med-saskia-herrmann.md
+│   └── dr-med-max-mustermann.md
+├── bookem/
+│   └── ...
+└── example-site/
+    ├── MAP.md
+    └── article-slug.md
+```
+
+**Rules:**
+- Folder name = domain or short name of the target site (kebab-case, no TLD) — e.g. `onedoc`, `bookem`, `helsana`
+- One file per scraped unit (doctor, article, product, listing)
+- File name = slug of the unit (last URL segment or generated from title, kebab-case)
+- Always create `MAP.md` in the site folder once it has 3+ files — use the `map-maintenance` skill
+
+```bash
+mkdir -p /workspace/extra/obsidian/MnemClaw/scrapes/<site-name>
+```
+
 | Target | Path pattern |
 |--------|-------------|
-| Scraper vault (default) | `/workspace/extra/obsidian/MnemClaw/scraper/<slug>-YYYY-MM-DD.md` |
-| Group workspace | `/workspace/group/<slug>-YYYY-MM-DD.json` |
+| Vault scrapes (default) | `/workspace/extra/obsidian/MnemClaw/scrapes/<site>/<slug>.md` |
+| Group workspace (temp/bulk) | `/workspace/group/<slug>-YYYY-MM-DD.json` |
 | Temporary / one-off | `/workspace/group/scrape-<timestamp>.txt` |
-
-```bash
-# Example: save with today's date
-DATE=$(date +%Y-%m-%d)
-python3 /workspace/group/bulk_scrape.py
-# script writes to OUTPUT_JSON defined inside
-```
-
-To save a Markdown note to the scraper vault:
-
-```bash
-DATE=$(date +%Y-%m-%d)
-mkdir -p /workspace/extra/obsidian/MnemClaw/scraper
-cat > /workspace/extra/obsidian/MnemClaw/scraper/example-site-${DATE}.md << 'EOF'
----
-title: Web Scrape — Example Site
-date: 2026-03-27
-source: https://example.com
----
-
-# Scraped Content
-
-...paste or write content here...
-EOF
-```
 
 ---
 

@@ -244,38 +244,21 @@ function buildContainerArgs(
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
 
-  // TEST MODE: bypass credential proxy and route directly to a fallback provider.
-  // Set NANOCLAW_TEST_PROVIDER=ollama|mammouth in .env to activate.
-  // Remove after testing.
-  if (
-    process.env.NANOCLAW_TEST_PROVIDER === 'ollama' &&
-    process.env.OLLAMA_API_KEY
-  ) {
-    args.push('-e', `ANTHROPIC_BASE_URL=https://ollama.com/v1`);
-    args.push('-e', `ANTHROPIC_API_KEY=${process.env.OLLAMA_API_KEY}`);
-  } else if (
-    process.env.NANOCLAW_TEST_PROVIDER === 'mammouth' &&
-    process.env.MAMMOUTH_API_KEY
-  ) {
-    args.push('-e', `ANTHROPIC_BASE_URL=https://api.mammouth.ai/v1`);
-    args.push('-e', `ANTHROPIC_API_KEY=${process.env.MAMMOUTH_API_KEY}`);
-  } else {
-    // Route API traffic through the credential proxy (containers never see real secrets)
-    args.push(
-      '-e',
-      `ANTHROPIC_BASE_URL=http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
-    );
+  // Route API traffic through the credential proxy (containers never see real secrets)
+  args.push(
+    '-e',
+    `ANTHROPIC_BASE_URL=http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
+  );
 
-    // Mirror the host's auth method with a placeholder value.
-    // API key mode: SDK sends x-api-key, proxy replaces with real key.
-    // OAuth mode:   SDK exchanges placeholder token for temp API key,
-    //               proxy injects real OAuth token on that exchange request.
-    const authMode = detectAuthMode();
-    if (authMode === 'api-key') {
-      args.push('-e', 'ANTHROPIC_API_KEY=placeholder');
-    } else {
-      args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
-    }
+  // Mirror the host's auth method with a placeholder value.
+  // API key mode: SDK sends x-api-key, proxy replaces with real key.
+  // OAuth mode:   SDK exchanges placeholder token for temp API key,
+  //               proxy injects real OAuth token on that exchange request.
+  const authMode = detectAuthMode();
+  if (authMode === 'api-key') {
+    args.push('-e', 'ANTHROPIC_API_KEY=placeholder');
+  } else {
+    args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
   }
 
   // Inject fallback provider keys so the agent-runner can switch providers

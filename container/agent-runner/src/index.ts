@@ -440,7 +440,7 @@ async function runQuery(
 
   // Hard cap to prevent infinite loops (especially on non-Claude models like deepseek).
   // Claude Code itself enforces a 200-turn limit; this is a safety net above that.
-  const MAX_MESSAGES = 500;
+  const MAX_MESSAGES = 3600;
 
   // Load global CLAUDE.md as additional system context (shared across all groups)
   const globalClaudeMdPath = '/workspace/global/CLAUDE.md';
