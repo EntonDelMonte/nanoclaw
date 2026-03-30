@@ -1,8 +1,9 @@
-import { ChildProcess } from 'child_process';
+import { ChildProcess, exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
 import { DATA_DIR, MAX_CONCURRENT_CONTAINERS } from './config.js';
+import { stopContainer } from './container-runtime.js';
 import { logger } from './logger.js';
 
 interface QueuedTask {
@@ -191,6 +192,33 @@ export class GroupQueue {
     } catch {
       // ignore
     }
+  }
+
+  /**
+   * Hard-stop the active container for a group.
+   * Writes the _close sentinel first (graceful), then force-kills the Docker
+   * container. Returns true if a container was running and stop was issued.
+   */
+  forceStop(groupJid: string): boolean {
+    const state = this.getGroup(groupJid);
+    if (!state.active) return false;
+
+    this.closeStdin(groupJid);
+
+    if (state.containerName) {
+      const name = state.containerName;
+      logger.info({ groupJid, containerName: name }, 'Force-stopping container');
+      exec(stopContainer(name), { timeout: 10000 }, (err) => {
+        if (err) {
+          logger.warn({ groupJid, containerName: name, err }, 'docker stop failed, killing process');
+          state.process?.kill('SIGKILL');
+        }
+      });
+    } else if (state.process) {
+      state.process.kill('SIGKILL');
+    }
+
+    return true;
   }
 
   private async runForGroup(

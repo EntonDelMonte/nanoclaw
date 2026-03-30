@@ -549,6 +549,18 @@ async function main(): Promise<void> {
         return;
       }
 
+      // /stop — hard-kill the active container for this chat
+      if (trimmed === '/stop') {
+        const channel = findChannel(channels, chatJid);
+        const stopped = queue.forceStop(chatJid);
+        if (channel) {
+          channel
+            .sendMessage(chatJid, stopped ? 'Stopped.' : 'No active task.')
+            .catch(() => {});
+        }
+        return;
+      }
+
       // Sender allowlist drop mode: discard messages from denied senders before storing
       if (!msg.is_from_me && !msg.is_bot_message && registeredGroups[chatJid]) {
         const cfg = loadSenderAllowlist();

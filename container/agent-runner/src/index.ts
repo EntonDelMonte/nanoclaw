@@ -438,6 +438,10 @@ async function runQuery(
   let resultCount = 0;
   let quotaExhausted = false;
 
+  // Hard cap to prevent infinite loops (especially on non-Claude models like deepseek).
+  // Claude Code itself enforces a 200-turn limit; this is a safety net above that.
+  const MAX_MESSAGES = 500;
+
   // Load global CLAUDE.md as additional system context (shared across all groups)
   const globalClaudeMdPath = '/workspace/global/CLAUDE.md';
   let globalClaudeMd: string | undefined;
@@ -509,6 +513,12 @@ async function runQuery(
     messageCount++;
     const msgType = message.type === 'system' ? `system/${(message as { subtype?: string }).subtype}` : message.type;
     log(`[msg #${messageCount}] type=${msgType}`);
+
+    if (messageCount >= MAX_MESSAGES) {
+      log(`Hard message cap (${MAX_MESSAGES}) reached — terminating query to prevent infinite loop`);
+      stream.end();
+      break;
+    }
 
     if (message.type === 'assistant' && 'uuid' in message) {
       lastAssistantUuid = (message as { uuid: string }).uuid;
