@@ -446,8 +446,54 @@ mkdir -p /workspace/extra/obsidian/MnemClaw/scrapes/<site-name>
 | Target | Path pattern |
 |--------|-------------|
 | Vault scrapes (default) | `/workspace/extra/obsidian/MnemClaw/scrapes/<site>/<slug>.md` |
+| CRM export CSV | `/workspace/extra/obsidian/MnemClaw/scrapes/<site>/<site>.csv` |
 | Group workspace (temp/bulk) | `/workspace/group/<slug>-YYYY-MM-DD.json` |
 | Temporary / one-off | `/workspace/group/scrape-<timestamp>.txt` |
+
+### CSV export (for CRM import)
+
+When the task requires a CRM-ready export, write a CSV alongside the Markdown notes:
+
+```
+/workspace/extra/obsidian/MnemClaw/scrapes/<site>/<site>.csv
+```
+
+- One row per scraped unit
+- Header row with all attribute names
+- **Append** new rows if the file already exists — never overwrite existing data
+- Escape commas and newlines in values (wrap in double quotes)
+- UTF-8 encoding
+
+Example for doctors:
+```csv
+name,specialty,clinic,address,city,languages,booking,tags,source_url
+"Dr. med. Saskia Herrmann","Allgemeine Innere Medizin","Praxis Name","Musterstrasse 1","Bern","Deutsch,Englisch","true","fachrichtung/allgemeine-innere-medizin","https://www.onedoc.ch/..."
+```
+
+Python snippet for safe CSV append:
+```python
+import csv, os
+
+CSV_PATH = '/workspace/extra/obsidian/MnemClaw/scrapes/onedoc/onedoc.csv'
+FIELDNAMES = ['name','specialty','clinic','address','city','languages','booking','tags','source_url']
+
+write_header = not os.path.exists(CSV_PATH)
+with open(CSV_PATH, 'a', newline='', encoding='utf-8') as f:
+    writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
+    if write_header:
+        writer.writeheader()
+    writer.writerow({
+        'name': doctor['name'],
+        'specialty': doctor['specialty'],
+        'clinic': doctor.get('clinic', ''),
+        'address': doctor.get('address', ''),
+        'city': doctor.get('city', ''),
+        'languages': ', '.join(doctor.get('languages', [])),
+        'booking': str(doctor.get('booking', '')).lower(),
+        'tags': ', '.join(doctor.get('tags', [])),
+        'source_url': doctor['url'],
+    })
+```
 
 ---
 
