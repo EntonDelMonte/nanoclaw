@@ -42,6 +42,11 @@ Upstream deleted this file (moved to a skill branch). We keep it because
 Telegram is our primary channel. On merge: `git add src/channels/telegram.ts`
 (keep ours when it shows as modify/delete).
 
+**Dependency note**: upstream also stripped `grammy` and `sharp` from
+`package.json` when it removed these skills. After any merge, verify they
+are still installed: `npm list grammy sharp`. Reinstall if missing:
+`npm install grammy sharp`.
+
 ### `.github/workflows/fork-sync-skills.yml` — Fork CI
 Our fork-sync workflow. Upstream deleted their version. Keep ours.
 
@@ -64,11 +69,6 @@ if (process.env.OLLAMA_API_KEY) args.push('-e', `OLLAMA_API_KEY=...`);
 if (process.env.MAMMOUTH_API_KEY) args.push('-e', `MAMMOUTH_API_KEY=...`);
 ```
 
-### All `src/*.ts` core files — Take upstream
-`src/index.ts`, `src/ipc.ts`, `src/router.ts`, `src/db.ts`, `src/types.ts`,
-`src/task-scheduler.ts`, etc. — take upstream. Our customizations are in
-`groups/`, not in `src/`.
-
 ---
 
 ## Fork-specific environment variables
@@ -88,21 +88,6 @@ and `.env`. They must survive updates:
 **Anthropic credentials** are now managed by OneCLI (`onecli secrets list`),
 not in `.env`. Do not add `ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN`
 back to `.env`.
-
----
-
-## Merge checklist
-
-Before running `/update-nanoclaw`:
-
-- [ ] Read this file
-- [ ] Commit or stash any in-progress changes
-- [ ] Note which conflict strategy to use for each conflicted file above
-- [ ] After merge: verify `grammy` and `sharp` are still installed
-  (`npm list grammy sharp`)
-- [ ] After merge: rebuild container (`./container/build.sh`) if
-  `container/agent-runner/` changed
-- [ ] After merge: check CHANGELOG.md for `[BREAKING]` entries
 
 ---
 
