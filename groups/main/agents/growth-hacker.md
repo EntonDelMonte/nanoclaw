@@ -16,18 +16,33 @@ Analytics, Ads, Marketing Automation, and Market Forecasting.
 
 | Situation | Model |
 |-----------|-------|
-| Primary — analytics, ad optimisation, market forecasting | `minimax-m2.1:cloud` via `mcp__ollama__ollama_generate` |
-| Simulation tasks (Mirofish / OASIS hypothesis testing) | `deepseek-r1-0528` via Mammouth API |
-| Live market intelligence, crypto/NFT trend monitoring | `sonar-deep-research` via Mammouth API |
-| Fallback — when Ollama unavailable | `deepseek-v3.1-terminus` via Mammouth API |
+| Primary — analytics, ad optimisation, market forecasting | `minimax-m2.7` via Ollama API |
+| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-5-20251001` (Agent SDK) |
+| Both Ollama and Claude exhausted | `deepseek-r1-0528` via Mammouth API |
+| Specialist: simulation tasks (Mirofish / OASIS hypothesis testing) | `deepseek-r1-0528` via Mammouth API |
+| Specialist: live market intelligence, crypto/NFT trend monitoring | `sonar-deep-research` via Mammouth API |
 
-Use the Mammouth OpenAI-compatible API for secondary models:
+Use the Ollama API for the primary model:
+```
+base_url: https://ollama.com/v1
+api_key: $OLLAMA_API_KEY
+model: minimax-m2.7
+```
+
+Use the Mammouth OpenAI-compatible API for specialist and fallback models:
 ```
 base_url: https://api.mammouth.ai/v1
 api_key: $MAMMOUTH_API_KEY
-model: deepseek-r1-0528   # simulations
-model: sonar-deep-research # market research (produces full reports — use for deep dives, not quick lookups)
+model: deepseek-r1-0528      # simulations + tertiary fallback
+model: sonar-deep-research   # market research (full reports — use for deep dives, not quick lookups)
 ```
+
+### When to use each
+
+- **minimax-m2.7 (Ollama — primary)**: All standard analytics work — interpreting GA4 data, ad performance analysis, Mautic reporting, funnel analysis, writing growth summaries. Strong at structured data interpretation and concise reporting.
+- **claude-haiku-4-5 (Claude — secondary)**: When Ollama is unavailable, or for tasks requiring careful multi-step metric reasoning, building cohort analysis logic, or drafting ad copy variations that need precise tone control.
+- **deepseek-r1-0528 (Mammouth — tertiary + specialist)**: Two roles: (1) emergency fallback when both Ollama and Claude are exhausted; (2) intentional use for Mirofish/OASIS simulations — its chain-of-thought reasoning is purpose-built for probabilistic hypothesis testing.
+- **sonar-deep-research (Mammouth — specialist only)**: Never use as a fallback. Only invoke deliberately for deep market intelligence dives — it produces full research reports with citations, which take time and cost more.
 
 ## Responsibilities
 

@@ -10,23 +10,29 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 
 | Situation | Model |
 |-----------|-------|
-| Primary — code generation, implementation, architecture | `qwen3-coder-plus` via Mammouth API |
-| Complex reasoning, cross-file architecture, API decisions | Claude 4.6 Sonnet (Agent SDK) |
-| Fallback — when Mammouth unavailable | `qwen3-coder:480b` via Ollama API |
+| Primary — code generation, implementation, refactoring | `qwen3-coder-next` via Ollama API |
+| Claude quota exhausted or Ollama unavailable | `claude-sonnet-4-6` (Agent SDK) |
+| Both Ollama and Claude exhausted | `gpt-5.1-codex` via Mammouth API |
 
-Use the Mammouth OpenAI-compatible API for the primary model:
+Use the Ollama API for the primary model:
+```
+base_url: https://ollama.com/v1
+api_key: $OLLAMA_API_KEY
+model: qwen3-coder-next
+```
+
+Use the Mammouth OpenAI-compatible API for the tertiary model:
 ```
 base_url: https://api.mammouth.ai/v1
 api_key: $MAMMOUTH_API_KEY
-model: qwen3-coder-plus
+model: gpt-5.1-codex
 ```
 
-Use the Ollama API for the fallback model:
-```
-base_url: https://api.ollama.com/v1
-api_key: $OLLAMA_API_KEY
-model: qwen3-coder:480b
-```
+### When to use each
+
+- **qwen3-coder-next (Ollama — primary)**: All standard coding tasks — feature implementation, refactoring, single-file generation, test writing. Purpose-built code model; fastest for straightforward implementation.
+- **claude-sonnet-4-6 (Claude — secondary)**: When Ollama is unavailable, or for cross-file architectural decisions, understanding complex existing codebases, API design trade-off analysis, or anything requiring careful multi-step reasoning about system behaviour.
+- **gpt-5.1-codex (Mammouth — tertiary)**: Emergency fallback when both Ollama and Claude are exhausted. Strong code model — acceptable quality for most implementation tasks.
 
 ## GitHub Setup
 

@@ -10,8 +10,29 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 
 | Situation | Model |
 |-----------|-------|
-| Primary — copywriting, campaigns, positioning | `claude-haiku-4-5-20251001` (Agent SDK) |
-| Fallback — when Claude quota exhausted | `qwen3.5:27b` via local Ollama (`mcp__ollama__ollama_generate`) |
+| Primary — copywriting, campaigns, positioning, SEO | `mistral-large-3:675b` via Ollama API |
+| Claude quota exhausted or Ollama unavailable | `claude-sonnet-4-6` (Agent SDK) |
+| Both Ollama and Claude exhausted | `gpt-5.2-chat` via Mammouth API |
+
+Use the Ollama API for the primary model:
+```
+base_url: https://ollama.com/v1
+api_key: $OLLAMA_API_KEY
+model: mistral-large-3:675b
+```
+
+Use the Mammouth OpenAI-compatible API for the tertiary model:
+```
+base_url: https://api.mammouth.ai/v1
+api_key: $MAMMOUTH_API_KEY
+model: gpt-5.2-chat
+```
+
+### When to use each
+
+- **mistral-large-3:675b (Ollama — primary)**: All standard copy tasks — landing page copy, social posts, campaign sequences, SEO descriptions, README sections. Excellent natural language fluency and tone control.
+- **claude-sonnet-4-6 (Claude — secondary)**: When Ollama is unavailable, or for high-stakes brand copy where precision matters, nuanced tone matching against an established voice, or when user-facing content needs careful brand alignment review.
+- **gpt-5.2-chat (Mammouth — tertiary)**: Emergency fallback when both Ollama and Claude are exhausted. Conversational and creative — suitable for most copy tasks.
 
 ## Responsibilities
 

@@ -12,23 +12,29 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 
 | Situation | Model |
 |-----------|-------|
-| Primary — skill authoring, integration research, code generation | `deepseek-v3.1-terminus` via Mammouth API |
-| Complex reasoning, architecture decisions, edge case analysis | Claude 4.6 Sonnet (Agent SDK) |
-| Fallback — when Mammouth unavailable | `qwen3.5:397b` via Ollama API |
+| Primary — skill authoring, integration research, SKILL.md generation | `deepseek-v3.2` via Ollama API |
+| Claude quota exhausted or Ollama unavailable | `claude-sonnet-4-6` (Agent SDK) |
+| Both Ollama and Claude exhausted | `deepseek-v3.1-terminus` via Mammouth API |
 
-Use the Mammouth OpenAI-compatible API for the primary model:
+Use the Ollama API for the primary model:
+```
+base_url: https://ollama.com/v1
+api_key: $OLLAMA_API_KEY
+model: deepseek-v3.2
+```
+
+Use the Mammouth OpenAI-compatible API for the tertiary model:
 ```
 base_url: https://api.mammouth.ai/v1
 api_key: $MAMMOUTH_API_KEY
 model: deepseek-v3.1-terminus
 ```
 
-Use the Ollama API for the fallback model:
-```
-base_url: https://api.ollama.com/v1
-api_key: $OLLAMA_API_KEY
-model: qwen3.5:397b
-```
+### When to use each
+
+- **deepseek-v3.2 (Ollama — primary)**: All standard skill authoring — writing SKILL.md files, adapting existing skills, searching and evaluating the local library. Strong at structured document generation and code snippets within markdown.
+- **claude-sonnet-4-6 (Claude — secondary)**: When Ollama is unavailable, or for complex integration decisions (e.g. whether to merge vs replace a conflicting skill, cross-skill dependency analysis, or designing a new skill category from scratch).
+- **deepseek-v3.1-terminus (Mammouth — tertiary)**: Emergency fallback — same model family as primary, slightly older version. Quality is very close; use when both Ollama and Claude are exhausted.
 
 ## Boundary
 
