@@ -207,7 +207,10 @@ export class GroupQueue {
 
     if (state.containerName) {
       const name = state.containerName;
-      logger.info({ groupJid, containerName: name }, 'Force-stopping container');
+      logger.info(
+        { groupJid, containerName: name },
+        'Force-stopping container',
+      );
       stopContainer(name);
       state.process?.kill('SIGKILL');
     } else if (state.process) {
