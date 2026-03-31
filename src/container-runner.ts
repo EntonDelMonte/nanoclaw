@@ -47,12 +47,9 @@ export interface ContainerInput {
   isMain: boolean;
   isScheduledTask?: boolean;
   assistantName?: string;
-<<<<<<< HEAD
+  script?: string;
   /** Images to include as multimodal content blocks in the initial prompt */
   images?: ContainerImageData[];
-=======
-  script?: string;
->>>>>>> upstream/main
 }
 
 export interface ContainerOutput {
@@ -219,18 +216,6 @@ function buildVolumeMounts(
     'agent-runner-src',
   );
   if (fs.existsSync(agentRunnerSrc)) {
-<<<<<<< HEAD
-    // Always sync index.ts so core runtime changes (quota fallback, message cap, etc.)
-    // are picked up without needing to delete the per-group directory.
-    // Other files are only seeded on first creation so groups can customise them.
-    if (!fs.existsSync(groupAgentRunnerDir)) {
-      fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
-    } else {
-      fs.copyFileSync(
-        path.join(agentRunnerSrc, 'index.ts'),
-        path.join(groupAgentRunnerDir, 'index.ts'),
-      );
-=======
     const srcIndex = path.join(agentRunnerSrc, 'index.ts');
     const cachedIndex = path.join(groupAgentRunnerDir, 'index.ts');
     const needsCopy =
@@ -240,7 +225,6 @@ function buildVolumeMounts(
         fs.statSync(srcIndex).mtimeMs > fs.statSync(cachedIndex).mtimeMs);
     if (needsCopy) {
       fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
->>>>>>> upstream/main
     }
   }
   mounts.push({
@@ -265,13 +249,8 @@ function buildVolumeMounts(
 async function buildContainerArgs(
   mounts: VolumeMount[],
   containerName: string,
-<<<<<<< HEAD
-  isMain: boolean,
-): string[] {
-=======
   agentIdentifier?: string,
 ): Promise<string[]> {
->>>>>>> upstream/main
   const args: string[] = ['run', '-i', '--rm', '--name', containerName];
 
   // Pass host timezone so container's local time matches the user's
@@ -292,19 +271,13 @@ async function buildContainerArgs(
     );
   }
 
-  if (isMain) {
-    // Dan (main group) runs on Claude Sonnet only — no Ollama/Mammouth fallback.
-    args.push('-e', 'NANOCLAW_CLAUDE_ONLY=1');
-    args.push('-e', 'ANTHROPIC_MODEL=claude-sonnet-4-6');
-  } else {
-    // Swarm agents: Ollama primary → Mammouth fallback → Claude last resort.
-    // Inject provider keys so the agent-runner can switch on quota exhaustion.
-    if (process.env.OLLAMA_API_KEY) {
-      args.push('-e', `OLLAMA_API_KEY=${process.env.OLLAMA_API_KEY}`);
-    }
-    if (process.env.MAMMOUTH_API_KEY) {
-      args.push('-e', `MAMMOUTH_API_KEY=${process.env.MAMMOUTH_API_KEY}`);
-    }
+  // Inject non-Anthropic provider keys for swarm agent fallback chain.
+  // OneCLI handles Anthropic credentials; Ollama and Mammouth are injected here.
+  if (process.env.OLLAMA_API_KEY) {
+    args.push('-e', `OLLAMA_API_KEY=${process.env.OLLAMA_API_KEY}`);
+  }
+  if (process.env.MAMMOUTH_API_KEY) {
+    args.push('-e', `MAMMOUTH_API_KEY=${process.env.MAMMOUTH_API_KEY}`);
   }
 
   // Runtime-specific args for host gateway resolution
@@ -347,9 +320,6 @@ export async function runContainerAgent(
   const mounts = buildVolumeMounts(group, input.isMain);
   const safeName = group.folder.replace(/[^a-zA-Z0-9-]/g, '-');
   const containerName = `nanoclaw-${safeName}-${Date.now()}`;
-<<<<<<< HEAD
-  const containerArgs = buildContainerArgs(mounts, containerName, input.isMain);
-=======
   // Main group uses the default OneCLI agent; others use their own agent.
   const agentIdentifier = input.isMain
     ? undefined
@@ -359,7 +329,6 @@ export async function runContainerAgent(
     containerName,
     agentIdentifier,
   );
->>>>>>> upstream/main
 
   logger.debug(
     {

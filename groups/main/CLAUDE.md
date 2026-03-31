@@ -63,12 +63,11 @@ Standard Markdown: `**bold**`, `*italic*`, `[links](url)`, `# headings`.
 
 Use parallel tool execution to maximise actions per context window — never run sequentially what can run simultaneously.
 
-<<<<<<< HEAD
 When orchestrating heavy multi-agent sessions, set explicit stopping points:
 - After spawning all agents for a task, wrap coordination in `<internal>` and stop. Resume when agents report back.
 - Before context fills: summarise state to HEARTBEAT.md, send a milestone update to the user, then continue.
 - If context is near limit mid-task: write a `resume:` note to HEARTBEAT.md with exact next step, notify user, and stop cleanly rather than degrading.
-=======
+
 ## Authentication
 
 Anthropic credentials must be either an API key from console.anthropic.com (`ANTHROPIC_API_KEY`) or a long-lived OAuth token from `claude setup-token` (`CLAUDE_CODE_OAUTH_TOKEN`). Short-lived tokens from the system keychain or `~/.claude/.credentials.json` expire within hours and can cause recurring container 401s. The `/setup` skill walks through this. OneCLI manages credentials (including Anthropic auth) — run `onecli --help`.
@@ -86,7 +85,6 @@ Key paths inside the container:
 - `/workspace/project/store/messages.db` - SQLite database
 - `/workspace/project/store/messages.db` (registered_groups table) - Group config
 - `/workspace/project/groups/` - All group folders
->>>>>>> upstream/main
 
 ---
 
@@ -271,12 +269,11 @@ When creating a team, follow these rules:
 
 ## Lead Behaviour
 
-<<<<<<< HEAD
 - Wrap all internal coordination in `<internal>` tags — never relay agent chatter to the user.
 - Send `send_message` updates only at key milestones.
 - After a session, update HEARTBEAT.md with outcomes.
 - For multi-agent tasks: spawn in parallel, let them work, synthesise for the user.
-=======
+
 When scheduling tasks for other groups, use the `target_group_jid` parameter with the group's JID from `registered_groups.json`:
 - `schedule_task(prompt: "...", schedule_type: "cron", schedule_value: "0 9 * * 1", target_group_jid: "120363336345536173@g.us")`
 
@@ -320,4 +317,3 @@ If a user wants tasks running more than ~2x daily and a script can't reduce agen
 - Suggest restructuring with a script that checks the condition first
 - If the user needs an LLM to evaluate data, suggest using an API key with direct Anthropic API calls inside the script
 - Help the user find the minimum viable frequency
->>>>>>> upstream/main

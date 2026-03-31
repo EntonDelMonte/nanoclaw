@@ -208,12 +208,8 @@ export class GroupQueue {
     if (state.containerName) {
       const name = state.containerName;
       logger.info({ groupJid, containerName: name }, 'Force-stopping container');
-      exec(stopContainer(name), { timeout: 10000 }, (err) => {
-        if (err) {
-          logger.warn({ groupJid, containerName: name, err }, 'docker stop failed, killing process');
-          state.process?.kill('SIGKILL');
-        }
-      });
+      stopContainer(name);
+      state.process?.kill('SIGKILL');
     } else if (state.process) {
       state.process.kill('SIGKILL');
     }
