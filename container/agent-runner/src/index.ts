@@ -16,6 +16,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { execFile } from 'child_process';
 import { query, HookCallback, PreCompactHookInput } from '@anthropic-ai/claude-agent-sdk';
 import { fileURLToPath } from 'url';
 
@@ -27,6 +28,7 @@ interface ContainerInput {
   isMain: boolean;
   isScheduledTask?: boolean;
   assistantName?: string;
+  script?: string;
 }
 
 interface ContainerOutput {
@@ -47,13 +49,9 @@ interface SessionsIndex {
   entries: SessionEntry[];
 }
 
-type ContentBlock =
-  | { type: 'text'; text: string }
-  | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } };
-
 interface SDKUserMessage {
   type: 'user';
-  message: { role: 'user'; content: string | ContentBlock[] };
+  message: { role: 'user'; content: string };
   parent_tool_use_id: null;
   session_id: string;
 }
@@ -61,56 +59,6 @@ interface SDKUserMessage {
 const IPC_INPUT_DIR = '/workspace/ipc/input';
 const IPC_INPUT_CLOSE_SENTINEL = path.join(IPC_INPUT_DIR, '_close');
 const IPC_POLL_MS = 500;
-
-// Pattern: [Photo: /workspace/group/attachments/<filename>]
-const PHOTO_TAG_RE = /\[Photo:\s*(\/workspace\/group\/attachments\/[^\]]+)\]/g;
-
-/**
- * Build a multimodal content array from a message string.
- * Detects [Photo: /path] tags, loads them as base64 image blocks, and
- * replaces the tag with surrounding text.  Returns a plain string when
- * no photo tags are found (keeps the fast path unchanged).
- */
-function buildContent(text: string): string | ContentBlock[] {
-  // Quick exit: no photo tags
-  if (!PHOTO_TAG_RE.test(text)) return text;
-  // Reset lastIndex after the test above
-  PHOTO_TAG_RE.lastIndex = 0;
-
-  const blocks: ContentBlock[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = PHOTO_TAG_RE.exec(text)) !== null) {
-    const before = text.slice(lastIndex, match.index).trim();
-    if (before) blocks.push({ type: 'text', text: before });
-
-    const filePath = match[1];
-    try {
-      const data = fs.readFileSync(filePath);
-      // Detect MIME type from magic bytes; fall back to image/jpeg
-      let mediaType = 'image/jpeg';
-      if (data[0] === 0x89 && data[1] === 0x50) mediaType = 'image/png';
-      else if (data[0] === 0x47 && data[1] === 0x49) mediaType = 'image/gif';
-      else if (data[0] === 0x52 && data[1] === 0x49) mediaType = 'image/webp';
-      blocks.push({
-        type: 'image',
-        source: { type: 'base64', media_type: mediaType, data: data.toString('base64') },
-      });
-    } catch (err) {
-      log(`Failed to load image ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
-      // Preserve original tag as text so the agent knows about it
-      blocks.push({ type: 'text', text: match[0] });
-    }
-
-    lastIndex = match.index + match[0].length;
-  }
-
-  const after = text.slice(lastIndex).trim();
-  if (after) blocks.push({ type: 'text', text: after });
-
-  return blocks.length > 0 ? blocks : text;
-}
 
 /**
  * Push-based async iterable for streaming user messages to the SDK.
@@ -124,7 +72,7 @@ class MessageStream {
   push(text: string): void {
     this.queue.push({
       type: 'user',
-      message: { role: 'user', content: buildContent(text) },
+      message: { role: 'user', content: text },
       parent_tool_use_id: null,
       session_id: '',
     });
@@ -378,23 +326,6 @@ function waitForIpcMessage(): Promise<string | null> {
 }
 
 /**
- * Detect whether an error string indicates Claude quota exhaustion.
- * The SDK fires `rate_limit_event` before making HTTP requests on MAX plan,
- * so the credential proxy never sees it — we detect it here instead.
- */
-function isQuotaError(text: string): boolean {
-  if (!text) return false;
-  const lower = text.toLowerCase();
-  return (
-    lower.includes("hit your limit") ||
-    lower.includes("rate_limit") ||
-    lower.includes("rate limit exceeded") ||
-    lower.includes("quota exceeded") ||
-    (lower.includes("limit") && lower.includes("reset"))
-  );
-}
-
-/**
  * Run a single query and stream results via writeOutput.
  * Uses MessageStream (AsyncIterable) to keep isSingleUserTurn=false,
  * allowing agent teams subagents to run to completion.
@@ -407,7 +338,7 @@ async function runQuery(
   containerInput: ContainerInput,
   sdkEnv: Record<string, string | undefined>,
   resumeAt?: string,
-): Promise<{ newSessionId?: string; lastAssistantUuid?: string; closedDuringQuery: boolean; quotaExhausted: boolean }> {
+): Promise<{ newSessionId?: string; lastAssistantUuid?: string; closedDuringQuery: boolean }> {
   const stream = new MessageStream();
   stream.push(prompt);
 
@@ -436,11 +367,6 @@ async function runQuery(
   let lastAssistantUuid: string | undefined;
   let messageCount = 0;
   let resultCount = 0;
-  let quotaExhausted = false;
-
-  // Hard cap to prevent infinite loops (especially on non-Claude models like deepseek).
-  // Claude Code itself enforces a 200-turn limit; this is a safety net above that.
-  const MAX_MESSAGES = 3600;
 
   // Load global CLAUDE.md as additional system context (shared across all groups)
   const globalClaudeMdPath = '/workspace/global/CLAUDE.md';
@@ -483,9 +409,7 @@ async function runQuery(
         'TeamCreate', 'TeamDelete', 'SendMessage',
         'TodoWrite', 'ToolSearch', 'Skill',
         'NotebookEdit',
-        'mcp__nanoclaw__*',
-        'mcp__ollama__*',
-        'mcp__linkedin__*'
+        'mcp__nanoclaw__*'
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
@@ -501,16 +425,6 @@ async function runQuery(
             NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
           },
         },
-        ollama: {
-          command: 'node',
-          args: [path.join(path.dirname(mcpServerPath), 'ollama-mcp-stdio.js')],
-        },
-        ...(process.env.LINKEDIN_MCP_URL ? {
-          linkedin: {
-            type: 'sse' as const,
-            url: process.env.LINKEDIN_MCP_URL,
-          },
-        } : {}),
       },
       hooks: {
         PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],
@@ -520,12 +434,6 @@ async function runQuery(
     messageCount++;
     const msgType = message.type === 'system' ? `system/${(message as { subtype?: string }).subtype}` : message.type;
     log(`[msg #${messageCount}] type=${msgType}`);
-
-    if (messageCount >= MAX_MESSAGES) {
-      log(`Hard message cap (${MAX_MESSAGES}) reached — terminating query to prevent infinite loop`);
-      stream.end();
-      break;
-    }
 
     if (message.type === 'assistant' && 'uuid' in message) {
       lastAssistantUuid = (message as { uuid: string }).uuid;
@@ -541,38 +449,70 @@ async function runQuery(
       log(`Task notification: task=${tn.task_id} status=${tn.status} summary=${tn.summary}`);
     }
 
-    // Detect SDK-level quota exhaustion (fires as rate_limit system message or
-    // error_during_operation result before any HTTP request is made on MAX plan)
-    if (message.type === 'system' && (message as { subtype?: string }).subtype === 'rate_limit') {
-      log('SDK rate_limit event — Claude quota exhausted');
-      quotaExhausted = true;
-      stream.end();
-    }
-
     if (message.type === 'result') {
       resultCount++;
       const textResult = 'result' in message ? (message as { result?: string }).result : null;
-      const subtype = message.subtype ?? '';
-      log(`Result #${resultCount}: subtype=${subtype}${textResult ? ` text=${textResult.slice(0, 200)}` : ''}`);
-
-      // Check result for quota error signals (subtype can't be 'rate_limit' per SDK types,
-      // but the result text itself may contain quota error messages)
-      if (!quotaExhausted && (isQuotaError(textResult || '') || isQuotaError(subtype))) {
-        log('Quota error detected in result — marking for fallback');
-        quotaExhausted = true;
-      } else {
-        writeOutput({
-          status: 'success',
-          result: textResult || null,
-          newSessionId
-        });
-      }
+      log(`Result #${resultCount}: subtype=${message.subtype}${textResult ? ` text=${textResult.slice(0, 200)}` : ''}`);
+      writeOutput({
+        status: 'success',
+        result: textResult || null,
+        newSessionId
+      });
     }
   }
 
   ipcPolling = false;
-  log(`Query done. Messages: ${messageCount}, results: ${resultCount}, lastAssistantUuid: ${lastAssistantUuid || 'none'}, closedDuringQuery: ${closedDuringQuery}, quotaExhausted: ${quotaExhausted}`);
-  return { newSessionId, lastAssistantUuid, closedDuringQuery, quotaExhausted };
+  log(`Query done. Messages: ${messageCount}, results: ${resultCount}, lastAssistantUuid: ${lastAssistantUuid || 'none'}, closedDuringQuery: ${closedDuringQuery}`);
+  return { newSessionId, lastAssistantUuid, closedDuringQuery };
+}
+
+interface ScriptResult {
+  wakeAgent: boolean;
+  data?: unknown;
+}
+
+const SCRIPT_TIMEOUT_MS = 30_000;
+
+async function runScript(script: string): Promise<ScriptResult | null> {
+  const scriptPath = '/tmp/task-script.sh';
+  fs.writeFileSync(scriptPath, script, { mode: 0o755 });
+
+  return new Promise((resolve) => {
+    execFile('bash', [scriptPath], {
+      timeout: SCRIPT_TIMEOUT_MS,
+      maxBuffer: 1024 * 1024,
+      env: process.env,
+    }, (error, stdout, stderr) => {
+      if (stderr) {
+        log(`Script stderr: ${stderr.slice(0, 500)}`);
+      }
+
+      if (error) {
+        log(`Script error: ${error.message}`);
+        return resolve(null);
+      }
+
+      // Parse last non-empty line of stdout as JSON
+      const lines = stdout.trim().split('\n');
+      const lastLine = lines[lines.length - 1];
+      if (!lastLine) {
+        log('Script produced no output');
+        return resolve(null);
+      }
+
+      try {
+        const result = JSON.parse(lastLine);
+        if (typeof result.wakeAgent !== 'boolean') {
+          log(`Script output missing wakeAgent boolean: ${lastLine.slice(0, 200)}`);
+          return resolve(null);
+        }
+        resolve(result as ScriptResult);
+      } catch {
+        log(`Script output is not valid JSON: ${lastLine.slice(0, 200)}`);
+        resolve(null);
+      }
+    });
+  });
 }
 
 async function main(): Promise<void> {
@@ -596,72 +536,6 @@ async function main(): Promise<void> {
   // No real secrets exist in the container environment.
   const sdkEnv: Record<string, string | undefined> = { ...process.env };
 
-  // Save original Claude credentials so we can restore them when falling back from Ollama.
-  const claudeSavedOAuth = process.env.CLAUDE_CODE_OAUTH_TOKEN;
-  const claudeSavedApiKey = process.env.ANTHROPIC_API_KEY;
-  const claudeSavedBaseUrl = process.env.ANTHROPIC_BASE_URL;
-
-  // Provider chain: Ollama (primary) → Claude (secondary) → Mammouth (tertiary).
-  // 'claude' type restores saved credentials; 'openai' type switches to an
-  // OpenAI-compatible endpoint.
-  type Provider =
-    | { name: string; type: 'openai'; baseUrl: string; keyEnv: string; model: string }
-    | { name: 'Claude'; type: 'claude' };
-
-  // NANOCLAW_CLAUDE_ONLY: skip Ollama/Mammouth entirely (used for Dan's main group).
-  // Otherwise: Ollama primary → Mammouth fallback → Claude last resort.
-  const providerChain: Provider[] = process.env.NANOCLAW_CLAUDE_ONLY === '1'
-    ? [{ name: 'Claude' as const, type: 'claude' as const }]
-    : [
-      { name: 'Ollama',   type: 'openai', baseUrl: 'https://ollama.com/v1',         keyEnv: 'OLLAMA_API_KEY',   model: 'deepseek-v3.1:671b' },
-      { name: 'Mammouth', type: 'openai', baseUrl: 'https://api.mammouth.ai/v1',     keyEnv: 'MAMMOUTH_API_KEY', model: 'deepseek-v3.1-terminus' },
-      { name: 'Claude' as const,   type: 'claude' as const },
-    ];
-
-  // Save original model so we can restore it for Claude fallback
-  const claudeSavedModel = process.env.ANTHROPIC_MODEL;
-
-  /** Apply a provider to sdkEnv. Returns false if its key is missing. */
-  function applyProvider(p: Provider): boolean {
-    if (p.type === 'claude') {
-      if (claudeSavedOAuth)    sdkEnv['CLAUDE_CODE_OAUTH_TOKEN'] = claudeSavedOAuth;
-      else                     delete sdkEnv['CLAUDE_CODE_OAUTH_TOKEN'];
-      if (claudeSavedApiKey)   sdkEnv['ANTHROPIC_API_KEY']  = claudeSavedApiKey;
-      else                     delete sdkEnv['ANTHROPIC_API_KEY'];
-      if (claudeSavedBaseUrl)  sdkEnv['ANTHROPIC_BASE_URL'] = claudeSavedBaseUrl;
-      else                     delete sdkEnv['ANTHROPIC_BASE_URL'];
-      if (claudeSavedModel)    sdkEnv['ANTHROPIC_MODEL'] = claudeSavedModel;
-      else                     delete sdkEnv['ANTHROPIC_MODEL'];
-      // Remove custom model bypass when restoring Claude — use normal validation
-      delete sdkEnv['ANTHROPIC_CUSTOM_MODEL_OPTION'];
-      return true;
-    }
-    const apiKey = process.env[p.keyEnv];
-    if (!apiKey) return false;
-    sdkEnv['ANTHROPIC_BASE_URL'] = p.baseUrl;
-    sdkEnv['ANTHROPIC_API_KEY']  = apiKey;
-    sdkEnv['ANTHROPIC_MODEL']    = p.model;
-    // Bypass Claude model name validation so non-Claude model names are accepted
-    sdkEnv['ANTHROPIC_CUSTOM_MODEL_OPTION'] = p.model;
-    delete sdkEnv['CLAUDE_CODE_OAUTH_TOKEN'];
-    return true;
-  }
-
-  // Start on the first available provider.
-  let providerIndex = 0;
-  while (providerIndex < providerChain.length) {
-    if (applyProvider(providerChain[providerIndex])) {
-      log(`Starting on provider: ${providerChain[providerIndex].name}`);
-      providerIndex++;
-      break;
-    }
-    log(`Provider ${providerChain[providerIndex].name} unavailable (no key), skipping`);
-    providerIndex++;
-  }
-
-  // providerIndex now points to the next (fallback) provider.
-  let fallbackIndex = providerIndex;
-
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const mcpServerPath = path.join(__dirname, 'ipc-mcp-stdio.js');
 
@@ -682,46 +556,38 @@ async function main(): Promise<void> {
     prompt += '\n' + pending.join('\n');
   }
 
+  // Script phase: run script before waking agent
+  if (containerInput.script && containerInput.isScheduledTask) {
+    log('Running task script...');
+    const scriptResult = await runScript(containerInput.script);
+
+    if (!scriptResult || !scriptResult.wakeAgent) {
+      const reason = scriptResult ? 'wakeAgent=false' : 'script error/no output';
+      log(`Script decided not to wake agent: ${reason}`);
+      writeOutput({
+        status: 'success',
+        result: null,
+      });
+      return;
+    }
+
+    // Script says wake agent — enrich prompt with script data
+    log(`Script wakeAgent=true, enriching prompt with data`);
+    prompt = `[SCHEDULED TASK]\n\nScript output:\n${JSON.stringify(scriptResult.data, null, 2)}\n\nInstructions:\n${containerInput.prompt}`;
+  }
+
   // Query loop: run query → wait for IPC message → run new query → repeat
   let resumeAt: string | undefined;
-  let currentPrompt = prompt;
   try {
     while (true) {
       log(`Starting query (session: ${sessionId || 'new'}, resumeAt: ${resumeAt || 'latest'})...`);
 
-      const queryResult = await runQuery(currentPrompt, sessionId, mcpServerPath, containerInput, sdkEnv, resumeAt);
+      const queryResult = await runQuery(prompt, sessionId, mcpServerPath, containerInput, sdkEnv, resumeAt);
       if (queryResult.newSessionId) {
         sessionId = queryResult.newSessionId;
       }
       if (queryResult.lastAssistantUuid) {
         resumeAt = queryResult.lastAssistantUuid;
-      }
-
-      // Handle provider failure (quota, rate-limit, or connection error) by
-      // switching to the next provider in the chain.
-      if (queryResult.quotaExhausted) {
-        let switched = false;
-        while (fallbackIndex < providerChain.length) {
-          const p = providerChain[fallbackIndex++];
-          if (applyProvider(p)) {
-            log(`Provider failed — switching to ${p.name}`);
-            // Cannot resume session across model providers — start fresh
-            sessionId = undefined;
-            resumeAt = undefined;
-            switched = true;
-            break;
-          }
-          log(`Provider ${p.name} unavailable (no key), skipping`);
-        }
-        if (switched) continue;
-        log('All providers exhausted or unconfigured');
-        writeOutput({
-          status: 'error',
-          result: null,
-          newSessionId: sessionId,
-          error: 'All providers exhausted — no fallback available'
-        });
-        process.exit(1);
       }
 
       // If _close was consumed during the query, exit immediately.
@@ -745,15 +611,11 @@ async function main(): Promise<void> {
       }
 
       log(`Got new message (${nextMessage.length} chars), starting new query`);
-      currentPrompt = nextMessage;
+      prompt = nextMessage;
     }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     log(`Agent error: ${errorMessage}`);
-    // Last-chance quota detection for errors thrown out of runQuery
-    if (isQuotaError(errorMessage) && fallbackIndex < providerChain.length) {
-      log(`Quota error thrown out of runQuery — consider updating isQuotaError() to catch this earlier.`);
-    }
     writeOutput({
       status: 'error',
       result: null,

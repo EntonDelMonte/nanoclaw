@@ -21,6 +21,10 @@ Single Node.js process with skill-based channel system. Channels (WhatsApp, Tele
 | `groups/{name}/CLAUDE.md` | Per-group memory (isolated) |
 | `container/skills/` | Skills loaded inside agent containers (browser, status, formatting) |
 
+## Secrets / Credentials / Proxy (OneCLI)
+
+API keys, secret keys, OAuth tokens, and auth credentials are managed by the OneCLI gateway — which handles secret injection into containers at request time, so no keys or tokens are ever passed to containers directly. Run `onecli --help`.
+
 ## Skills
 
 Four types of skills exist in NanoClaw. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full taxonomy and guidelines.
@@ -36,17 +40,13 @@ Four types of skills exist in NanoClaw. See [CONTRIBUTING.md](CONTRIBUTING.md) f
 | `/customize` | Adding channels, integrations, changing behavior |
 | `/debug` | Container issues, logs, troubleshooting |
 | `/update-nanoclaw` | Bring upstream NanoClaw updates into a customized install |
-| `/update-skills` | Check for and install new or updated skills |
+| `/init-onecli` | Install OneCLI Agent Vault and migrate `.env` credentials to it |
 | `/qodo-pr-resolver` | Fetch and fix Qodo PR review issues interactively or in batch |
 | `/get-qodo-rules` | Load org- and repo-level coding rules from Qodo before code tasks |
 
-## Local Skills Source
+## Contributing
 
-**Always check `/Users/oflorian/Documents/Github/_skills` before going to the internet or upstream git.**
-
-- `agent-skills-hub/skills/*/SKILL.md` — primary; standard NanoClaw SKILL.md format (700+ skills)
-- `agency-agents/**/*.md` — agent persona prompts by domain
-- `www-impeccable/` — design and web skills
+Before creating a PR, adding a skill, or preparing any contribution, you MUST read [CONTRIBUTING.md](CONTRIBUTING.md). It covers accepted change types, the four skill types and their guidelines, SKILL.md format rules, PR requirements, and the pre-submission checklist (searching for existing PRs/issues, testing, description format).
 
 ## Development
 
