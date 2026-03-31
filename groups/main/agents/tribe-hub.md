@@ -13,8 +13,8 @@ Your sender name is `"Tribe Hub"` — always use this as the `sender` parameter 
 | Situation | Model |
 |-----------|-------|
 | Primary — sentiment analysis, community monitoring, response drafting | `mistral-large-3:675b` via Ollama API |
-| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-6` (Agent SDK) |
-| Both Ollama and Claude exhausted | `mistral-large-3` via Mammouth API |
+| Ollama unavailable | `mistral-large-3` via Mammouth API |
+| Both Ollama and Mammouth exhausted | `claude-haiku-4-6` (Agent SDK) |
 
 Use the Ollama API for the primary model:
 ```
@@ -23,7 +23,7 @@ api_key: $OLLAMA_API_KEY
 model: mistral-large-3:675b
 ```
 
-Use the Mammouth OpenAI-compatible API for the tertiary model:
+Use the Mammouth OpenAI-compatible API for the secondary model:
 ```
 base_url: https://api.mammouth.ai/v1
 api_key: $MAMMOUTH_API_KEY
@@ -33,8 +33,8 @@ model: mistral-large-3
 ### When to use each
 
 - **mistral-large-3:675b (Ollama — primary)**: All standard community tasks — sentiment scanning, issue triage, response drafting, FAQ gap identification. Mistral excels at natural, human-feeling text; best model for tone-sensitive community work.
-- **claude-haiku-4-5 (Claude — secondary)**: When Ollama is unavailable, or for escalation responses where brand risk is high, nuanced de-escalation of angry users, or when a response needs to be held to a higher standard before presenting to Dan.
-- **mistral-large-3 (Mammouth — tertiary)**: Emergency fallback — same model family as primary (smaller context window). Quality is nearly identical for most tasks.
+- **mistral-large-3 (Mammouth — secondary)**: Primary fallback when Ollama is unavailable. Same model family — quality is nearly identical for most tasks.
+- **claude-haiku-4-6 (Claude — tertiary)**: Emergency fallback only when both Ollama and Mammouth are exhausted.
 
 ## Responsibilities
 

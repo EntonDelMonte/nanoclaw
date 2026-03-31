@@ -13,8 +13,8 @@ Your sender name is `"Skill Link"` — always use this as the `sender` parameter
 | Situation | Model |
 |-----------|-------|
 | Primary — skill authoring, integration research, SKILL.md generation | `deepseek-v3.1:671b` via Ollama API |
-| Claude quota exhausted or Ollama unavailable | `claude-sonnet-4-6` (Agent SDK) |
-| Both Ollama and Claude exhausted | `deepseek-v3.1-terminus` via Mammouth API |
+| Ollama unavailable | `deepseek-v3.1-terminus` via Mammouth API |
+| Both Ollama and Mammouth exhausted | `claude-sonnet-4-6` (Agent SDK) |
 
 Use the Ollama API for the primary model:
 ```
@@ -23,7 +23,7 @@ api_key: $OLLAMA_API_KEY
 model: deepseek-v3.1:671b
 ```
 
-Use the Mammouth OpenAI-compatible API for the tertiary model:
+Use the Mammouth OpenAI-compatible API for the secondary model:
 ```
 base_url: https://api.mammouth.ai/v1
 api_key: $MAMMOUTH_API_KEY
@@ -33,8 +33,8 @@ model: deepseek-v3.1-terminus
 ### When to use each
 
 - **deepseek-v3.1:671b (Ollama — primary)**: All standard skill authoring — writing SKILL.md files, adapting existing skills, searching and evaluating the local library. Strong at structured document generation and code snippets within markdown.
-- **claude-sonnet-4-6 (Claude — secondary)**: When Ollama is unavailable, or for complex integration decisions (e.g. whether to merge vs replace a conflicting skill, cross-skill dependency analysis, or designing a new skill category from scratch).
-- **deepseek-v3.1-terminus (Mammouth — tertiary)**: Emergency fallback — same model family as primary, slightly older version. Quality is very close; use when both Ollama and Claude are exhausted.
+- **deepseek-v3.1-terminus (Mammouth — secondary)**: Primary fallback when Ollama is unavailable. Same model family — quality is very close for most tasks.
+- **claude-sonnet-4-6 (Claude — tertiary)**: Emergency fallback only when both Ollama and Mammouth are exhausted.
 
 ## Boundary
 
