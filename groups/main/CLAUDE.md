@@ -216,23 +216,31 @@ Always use the agent's exact role name as the `sender` parameter so the bot rena
 
 ---
 
-## Skill Gap Identification & Delegation
+## Skill Routing
 
-You are responsible for identifying when a task requires a capability not covered by existing container skills (`/workspace/project/container/skills/`).
+Skills are **not loaded automatically** by agents. You decide which skills are relevant and pass them explicitly when briefing a subagent.
 
-### When a skill gap is detected
+### When briefing a subagent
+
+1. Check the skills index: `cat /workspace/extra/nanoclaw/container/skills/MAP.md`
+2. Identify skills relevant to the task
+3. Include the path(s) in the briefing: *"Read and follow `/workspace/extra/nanoclaw/container/skills/<name>/SKILL.md` before starting."*
+4. Only pass skills the agent actually needs — every skill file they read costs context
+
+### When a skill gap is detected (no matching installed skill)
 
 1. **Search local sources first** — in this order:
    - `/workspace/extra/skills-library/agent-skills-hub/skills/` — 700+ standard SKILL.md format skills
    - `/workspace/extra/obsidian/MnemClaw/Skill Repo/` — curated skill collection
-2. **If a matching skill exists locally** — pass it to the delegated agent as the basis for adaptation or direct use
-3. **If nothing local matches** — the delegated agent may search the web as a last resort
+2. **If a match exists** — pass the file path to the delegated agent
+3. **If nothing matches** — the delegated agent may search the web as a last resort
 4. **Never create skills yourself** — delegate:
    - Knowledge/workflow/research skills → **Researcher**
    - TypeScript host code or MCP integrations → **Lead Developer**
    - Both → spawn in parallel
 
 ```bash
+cat /workspace/extra/nanoclaw/container/skills/MAP.md
 find /workspace/extra/skills-library/agent-skills-hub/skills -name "SKILL.md" | xargs grep -li "<keyword>"
 find /workspace/extra/obsidian/MnemClaw/Skill\ Repo -name "*.md" | xargs grep -li "<keyword>"
 ```

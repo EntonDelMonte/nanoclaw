@@ -596,6 +596,58 @@ async function main(): Promise<void> {
   // No real secrets exist in the container environment.
   const sdkEnv: Record<string, string | undefined> = { ...process.env };
 
+  // Save original Claude credentials so we can restore them when falling back from Ollama.
+  const claudeSavedOAuth = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  const claudeSavedApiKey = process.env.ANTHROPIC_API_KEY;
+  const claudeSavedBaseUrl = process.env.ANTHROPIC_BASE_URL;
+
+  // Provider chain: Ollama (primary) → Claude (secondary) → Mammouth (tertiary).
+  // 'claude' type restores saved credentials; 'openai' type switches to an
+  // OpenAI-compatible endpoint.
+  type Provider =
+    | { name: string; type: 'openai'; baseUrl: string; keyEnv: string }
+    | { name: 'Claude'; type: 'claude' };
+
+  const providerChain: Provider[] = [
+    { name: 'Ollama',    type: 'openai', baseUrl: 'https://ollama.com/v1',           keyEnv: 'OLLAMA_API_KEY' },
+    { name: 'Claude',    type: 'claude' },
+    { name: 'Mammouth',  type: 'openai', baseUrl: 'https://api.mammouth.ai/v1',       keyEnv: 'MAMMOUTH_API_KEY' },
+  ];
+
+  /** Apply a provider to sdkEnv. Returns false if its key is missing. */
+  function applyProvider(p: Provider): boolean {
+    if (p.type === 'claude') {
+      if (claudeSavedOAuth)    sdkEnv['CLAUDE_CODE_OAUTH_TOKEN'] = claudeSavedOAuth;
+      else                     delete sdkEnv['CLAUDE_CODE_OAUTH_TOKEN'];
+      if (claudeSavedApiKey)   sdkEnv['ANTHROPIC_API_KEY']  = claudeSavedApiKey;
+      else                     delete sdkEnv['ANTHROPIC_API_KEY'];
+      if (claudeSavedBaseUrl)  sdkEnv['ANTHROPIC_BASE_URL'] = claudeSavedBaseUrl;
+      else                     delete sdkEnv['ANTHROPIC_BASE_URL'];
+      return true;
+    }
+    const apiKey = process.env[p.keyEnv];
+    if (!apiKey) return false;
+    sdkEnv['ANTHROPIC_BASE_URL'] = p.baseUrl;
+    sdkEnv['ANTHROPIC_API_KEY']  = apiKey;
+    delete sdkEnv['CLAUDE_CODE_OAUTH_TOKEN'];
+    return true;
+  }
+
+  // Start on the first available provider.
+  let providerIndex = 0;
+  while (providerIndex < providerChain.length) {
+    if (applyProvider(providerChain[providerIndex])) {
+      log(`Starting on provider: ${providerChain[providerIndex].name}`);
+      providerIndex++;
+      break;
+    }
+    log(`Provider ${providerChain[providerIndex].name} unavailable (no key), skipping`);
+    providerIndex++;
+  }
+
+  // providerIndex now points to the next (fallback) provider.
+  let fallbackIndex = providerIndex;
+
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const mcpServerPath = path.join(__dirname, 'ipc-mcp-stdio.js');
 
@@ -616,15 +668,6 @@ async function main(): Promise<void> {
     prompt += '\n' + pending.join('\n');
   }
 
-  // Fallback provider chain for SDK-level quota exhaustion.
-  // When Claude MAX plan fires rate_limit_event, no HTTP request is made so the
-  // credential proxy never sees it. We detect it here and switch provider directly.
-  const fallbackChain: Array<{ name: string; baseUrl: string; model: string; keyEnv: string }> = [
-    { name: 'Ollama', baseUrl: 'https://ollama.com/v1', model: 'deepseek-v3.1:671b', keyEnv: 'OLLAMA_API_KEY' },
-    { name: 'Mammouth', baseUrl: 'https://api.mammouth.ai/v1', model: 'deepseek-v3.1-terminus', keyEnv: 'MAMMOUTH_API_KEY' },
-  ];
-  let fallbackIndex = 0;
-
   // Query loop: run query → wait for IPC message → run new query → repeat
   let resumeAt: string | undefined;
   let currentPrompt = prompt;
@@ -640,32 +683,29 @@ async function main(): Promise<void> {
         resumeAt = queryResult.lastAssistantUuid;
       }
 
-      // Handle SDK-level quota exhaustion by switching to next fallback provider
+      // Handle provider failure (quota, rate-limit, or connection error) by
+      // switching to the next provider in the chain.
       if (queryResult.quotaExhausted) {
         let switched = false;
-        while (fallbackIndex < fallbackChain.length) {
-          const fb = fallbackChain[fallbackIndex++];
-          const apiKey = process.env[fb.keyEnv];
-          if (apiKey) {
-            log(`Quota exhausted — switching to ${fb.name} (${fb.model})`);
-            sdkEnv['ANTHROPIC_BASE_URL'] = fb.baseUrl;
-            sdkEnv['ANTHROPIC_API_KEY'] = apiKey;
-            delete sdkEnv['CLAUDE_CODE_OAUTH_TOKEN'];
+        while (fallbackIndex < providerChain.length) {
+          const p = providerChain[fallbackIndex++];
+          if (applyProvider(p)) {
+            log(`Provider failed — switching to ${p.name}`);
             // Cannot resume session across model providers — start fresh
             sessionId = undefined;
             resumeAt = undefined;
             switched = true;
             break;
           }
-          log(`Quota exhausted but no API key for ${fb.name} (${fb.keyEnv}), trying next`);
+          log(`Provider ${p.name} unavailable (no key), skipping`);
         }
         if (switched) continue;
-        log('All fallback providers exhausted or unconfigured');
+        log('All providers exhausted or unconfigured');
         writeOutput({
           status: 'error',
           result: null,
           newSessionId: sessionId,
-          error: 'Claude quota exhausted and no fallback providers available'
+          error: 'All providers exhausted — no fallback available'
         });
         process.exit(1);
       }
@@ -697,12 +737,8 @@ async function main(): Promise<void> {
     const errorMessage = err instanceof Error ? err.message : String(err);
     log(`Agent error: ${errorMessage}`);
     // Last-chance quota detection for errors thrown out of runQuery
-    if (isQuotaError(errorMessage) && fallbackIndex < fallbackChain.length) {
-      const fb = fallbackChain[fallbackIndex++];
-      const apiKey = process.env[fb.keyEnv];
-      if (apiKey) {
-        log(`Quota error caught — this should have been handled inside runQuery. Consider updating isQuotaError().`);
-      }
+    if (isQuotaError(errorMessage) && fallbackIndex < providerChain.length) {
+      log(`Quota error thrown out of runQuery — consider updating isQuotaError() to catch this earlier.`);
     }
     writeOutput({
       status: 'error',
