@@ -248,6 +248,7 @@ function buildVolumeMounts(
 function buildContainerArgs(
   mounts: VolumeMount[],
   containerName: string,
+  isMain: boolean,
 ): string[] {
   const args: string[] = ['run', '-i', '--rm', '--name', containerName];
 
@@ -271,14 +272,19 @@ function buildContainerArgs(
     args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
   }
 
-  // Inject fallback provider keys so the agent-runner can switch providers
-  // if the primary Claude quota is exhausted at the SDK level (rate_limit_event).
-  // These are read from the host's .env — never hardcoded here.
-  if (process.env.OLLAMA_API_KEY) {
-    args.push('-e', `OLLAMA_API_KEY=${process.env.OLLAMA_API_KEY}`);
-  }
-  if (process.env.MAMMOUTH_API_KEY) {
-    args.push('-e', `MAMMOUTH_API_KEY=${process.env.MAMMOUTH_API_KEY}`);
+  if (isMain) {
+    // Dan (main group) runs on Claude Sonnet only — no Ollama/Mammouth fallback.
+    args.push('-e', 'NANOCLAW_CLAUDE_ONLY=1');
+    args.push('-e', 'ANTHROPIC_MODEL=claude-sonnet-4-6');
+  } else {
+    // Swarm agents: Ollama primary → Mammouth fallback → Claude last resort.
+    // Inject provider keys so the agent-runner can switch on quota exhaustion.
+    if (process.env.OLLAMA_API_KEY) {
+      args.push('-e', `OLLAMA_API_KEY=${process.env.OLLAMA_API_KEY}`);
+    }
+    if (process.env.MAMMOUTH_API_KEY) {
+      args.push('-e', `MAMMOUTH_API_KEY=${process.env.MAMMOUTH_API_KEY}`);
+    }
   }
 
   // Runtime-specific args for host gateway resolution
@@ -321,7 +327,7 @@ export async function runContainerAgent(
   const mounts = buildVolumeMounts(group, input.isMain);
   const safeName = group.folder.replace(/[^a-zA-Z0-9-]/g, '-');
   const containerName = `nanoclaw-${safeName}-${Date.now()}`;
-  const containerArgs = buildContainerArgs(mounts, containerName);
+  const containerArgs = buildContainerArgs(mounts, containerName, input.isMain);
 
   logger.debug(
     {

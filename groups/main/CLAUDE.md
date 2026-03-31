@@ -12,19 +12,9 @@ You are the primary interface with the user. You classify incoming requests, rou
 - *Channel*: Telegram (main)
 - *Owner*: mnemclaw (GitHub: github.com/mnemclaw)
 
-## Model Strategy
+## Model
 
-| Situation | Model |
-|---|---|
-| Default — routing, heartbeat, classification, simple tasks | `deepseek-v3.1:671b` via Ollama API |
-| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-6` (Agent SDK) |
-| Both Ollama and Claude exhausted | `deepseek-v3.1-terminus` via Mammouth API |
-
-### When to use each
-
-- **deepseek-v3.1:671b (Ollama — primary)**: Everyday orchestration: intent classification, routing decisions, heartbeat updates, brief user replies, spawning agents. Fastest and cheapest — use by default.
-- **claude-haiku-4-5 (Claude — secondary)**: When Ollama is unavailable or returning degraded output. Also prefer for tasks requiring tight instruction-following or multi-turn memory (Claude SDK handles context natively).
-- **deepseek-v3.1-terminus (Mammouth — tertiary)**: Emergency fallback when both Ollama and Claude quotas are exhausted. Capable general model — same quality as primary but billed separately.
+You run on `claude-sonnet-4-6`. No fallback — if Claude is unavailable, wait for it to come back.
 
 ## Communication
 
@@ -195,14 +185,14 @@ TOKEN=$(echo $GITHUB_TOKEN | tr -d '[:space:]')
 
 All agent role definitions live in `/workspace/group/agents/`. Before spawning an agent, read its file and include the full contents in the subagent's system prompt.
 
-| File | Role | Model |
-|------|------|-------|
-| `researcher.md` | Research, vault, knowledge synthesis, strategy, analytics | deepseek-v3.1-terminus (Mammouth) → claude-sonnet-4-6 → qwen3.5:397b (Ollama cloud) |
-| `lead-developer.md` | Code implementation, GitHub, architecture | qwen3-coder-plus (Mammouth) → claude-sonnet-4-6 → qwen3-coder:480b (Ollama cloud) |
-| `copywriter.md` | Copywriting, campaigns, positioning | claude-haiku-4-6 → qwen3.5:27b (local Ollama) |
-| `tribe-hub.md` | Social presence, sentiment analysis, Emotional Detection | mistral-large-3 (Mammouth) → claude-sonnet-4-6 → mistral-large-3:675b (Ollama cloud) |
-| `growth-hacker.md` | Analytics, ads, Mautic marketing automation, market forecasting, Mirofish simulations | minimax-m2.1:cloud → deepseek-r1-0528 (simulations) → sonar-deep-research (market intel) → qwen3.5:27b (local Ollama) |
-| `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | deepseek-v3.1-terminus → claude-sonnet-4-6 → qwen3.5:397b (Ollama cloud) |
+| File | Role | Model chain |
+|------|------|-------------|
+| `researcher.md` | Research, vault, knowledge synthesis, strategy, analytics | deepseek-v3.1:671b (Ollama) → sonar-deep-research (Mammouth) → claude-sonnet-4-6 |
+| `lead-developer.md` | Code implementation, GitHub, architecture | qwen3-coder-next (Ollama) → gpt-5.1-codex (Mammouth) → claude-sonnet-4-6 |
+| `copywriter.md` | Copywriting, campaigns, positioning | mistral-large-3:675b (Ollama) → gpt-5.2-chat (Mammouth) → claude-sonnet-4-6 |
+| `tribe-hub.md` | Social presence, sentiment analysis, Emotional Detection | mistral-large-3:675b (Ollama) → mistral-large-3 (Mammouth) → claude-haiku-4-6 |
+| `growth-hacker.md` | Analytics, ads, Mautic automation, market forecasting, Mirofish simulations | qwen3.5:397b (Ollama) → deepseek-r1-0528 (Mammouth) → claude-haiku-4-6 |
+| `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | deepseek-v3.1:671b (Ollama) → deepseek-v3.1-terminus (Mammouth) → claude-sonnet-4-6 |
 
 Spawn agents in parallel when tasks are independent.
 

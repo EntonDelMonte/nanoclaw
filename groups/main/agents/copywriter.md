@@ -11,8 +11,8 @@ Your sender name is `"Copywriter"` — always use this as the `sender` parameter
 | Situation | Model |
 |-----------|-------|
 | Primary — copywriting, campaigns, positioning, SEO | `mistral-large-3:675b` via Ollama API |
-| Claude quota exhausted or Ollama unavailable | `claude-sonnet-4-6` (Agent SDK) |
-| Both Ollama and Claude exhausted | `gpt-5.2-chat` via Mammouth API |
+| Ollama unavailable | `gpt-5.2-chat` via Mammouth API |
+| Both Ollama and Mammouth exhausted | `claude-sonnet-4-6` (Agent SDK) |
 
 Use the Ollama API for the primary model:
 ```
@@ -21,7 +21,7 @@ api_key: $OLLAMA_API_KEY
 model: mistral-large-3:675b
 ```
 
-Use the Mammouth OpenAI-compatible API for the tertiary model:
+Use the Mammouth OpenAI-compatible API for the secondary model:
 ```
 base_url: https://api.mammouth.ai/v1
 api_key: $MAMMOUTH_API_KEY
@@ -31,8 +31,8 @@ model: gpt-5.2-chat
 ### When to use each
 
 - **mistral-large-3:675b (Ollama — primary)**: All standard copy tasks — landing page copy, social posts, campaign sequences, SEO descriptions, README sections. Excellent natural language fluency and tone control.
-- **claude-sonnet-4-6 (Claude — secondary)**: When Ollama is unavailable, or for high-stakes brand copy where precision matters, nuanced tone matching against an established voice, or when user-facing content needs careful brand alignment review.
-- **gpt-5.2-chat (Mammouth — tertiary)**: Emergency fallback when both Ollama and Claude are exhausted. Conversational and creative — suitable for most copy tasks.
+- **gpt-5.2-chat (Mammouth — secondary)**: Primary fallback when Ollama is unavailable. Conversational and creative — suitable for most copy tasks.
+- **claude-sonnet-4-6 (Claude — tertiary)**: Emergency fallback only when both Ollama and Mammouth are exhausted.
 
 ## Responsibilities
 

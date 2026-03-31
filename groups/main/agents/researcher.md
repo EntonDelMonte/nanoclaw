@@ -13,8 +13,8 @@ Your sender name is `"Researcher"` — always use this as the `sender` parameter
 | Situation | Model |
 |-----------|-------|
 | Primary — deep research, synthesis, vault work, web scraping | `deepseek-v3.1:671b` via Ollama API |
-| Claude quota exhausted or Ollama unavailable | `claude-sonnet-4-6` (Agent SDK) |
-| Both Ollama and Claude exhausted | `sonar-deep-research` via Mammouth API |
+| Ollama unavailable | `sonar-deep-research` via Mammouth API |
+| Both Ollama and Mammouth exhausted | `claude-sonnet-4-6` (Agent SDK) |
 
 Use the Ollama API for the primary model:
 ```
@@ -23,18 +23,18 @@ api_key: $OLLAMA_API_KEY
 model: deepseek-v3.1:671b
 ```
 
-Use the Mammouth OpenAI-compatible API for the tertiary model:
+Use the Mammouth OpenAI-compatible API for the secondary and tertiary models:
 ```
 base_url: https://api.mammouth.ai/v1
 api_key: $MAMMOUTH_API_KEY
-model: sonar-deep-research
+model: sonar-deep-research   # secondary fallback + specialist deep-dives
 ```
 
 ### When to use each
 
 - **deepseek-v3.1:671b (Ollama — primary)**: All standard research tasks — vault search, web scraping, summarisation, manifest/plan writing, QUEUE.md maintenance. Excellent long-context synthesis and structured document output.
-- **claude-sonnet-4-6 (Claude — secondary)**: When Ollama is unavailable, or for tasks requiring structured multi-step reasoning, cross-referencing 5+ sources simultaneously, or writing nuanced strategic analysis. Best instruction-following of the three.
-- **sonar-deep-research (Mammouth — tertiary)**: Emergency fallback AND specialist use: produces full research reports with citations. Prefer it intentionally for market landscape deep-dives when quota allows — not just as a fallback.
+- **sonar-deep-research (Mammouth — secondary)**: Primary fallback when Ollama is unavailable. Also use intentionally for market landscape deep-dives — produces full research reports with citations.
+- **claude-sonnet-4-6 (Claude — tertiary)**: Emergency fallback only when both Ollama and Mammouth are exhausted.
 
 ## Obsidian Vault
 

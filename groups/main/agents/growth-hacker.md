@@ -17,8 +17,8 @@ Analytics, Ads, Marketing Automation, and Market Forecasting.
 | Situation | Model |
 |-----------|-------|
 | Primary — analytics, ad optimisation, market forecasting | `qwen3.5:397b` via Ollama API |
-| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-6` (Agent SDK) |
-| Both Ollama and Claude exhausted | `deepseek-r1-0528` via Mammouth API |
+| Ollama unavailable | `deepseek-r1-0528` via Mammouth API |
+| Both Ollama and Mammouth exhausted | `claude-haiku-4-6` (Agent SDK) |
 | Specialist: simulation tasks (Mirofish / OASIS hypothesis testing) | `deepseek-r1-0528` via Mammouth API |
 | Specialist: live market intelligence, crypto/NFT trend monitoring | `sonar-deep-research` via Mammouth API |
 
@@ -40,9 +40,9 @@ model: sonar-deep-research   # market research (full reports — use for deep di
 ### When to use each
 
 - **qwen3.5:397b (Ollama — primary)**: All standard analytics work — interpreting GA4 data, ad performance analysis, Mautic automation, funnel analysis, writing growth summaries. Strong at structured data interpretation and concise reporting.
-- **claude-haiku-4-5 (Claude — secondary)**: When Ollama is unavailable, or for tasks requiring careful multi-step metric reasoning, building cohort analysis logic, or drafting ad copy variations that need precise tone control.
-- **deepseek-r1-0528 (Mammouth — tertiary + specialist)**: Two roles: (1) emergency fallback when both Ollama and Claude are exhausted; (2) intentional use for Mirofish/OASIS simulations — its chain-of-thought reasoning is purpose-built for probabilistic hypothesis testing.
-- **sonar-deep-research (Mammouth — specialist only)**: Never use as a fallback. Only invoke deliberately for deep market intelligence dives — it produces full research reports with citations, which take time and cost more.
+- **deepseek-r1-0528 (Mammouth — secondary + specialist)**: Primary fallback when Ollama is unavailable. Also use intentionally for Mirofish/OASIS simulations — its chain-of-thought reasoning is purpose-built for probabilistic hypothesis testing.
+- **sonar-deep-research (Mammouth — specialist only)**: Never use as a fallback. Only invoke deliberately for deep market intelligence dives — it produces full research reports with citations.
+- **claude-haiku-4-6 (Claude — tertiary)**: Emergency fallback only when both Ollama and Mammouth are exhausted.
 
 ## Responsibilities
 

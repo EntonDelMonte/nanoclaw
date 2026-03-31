@@ -605,14 +605,21 @@ async function main(): Promise<void> {
   // 'claude' type restores saved credentials; 'openai' type switches to an
   // OpenAI-compatible endpoint.
   type Provider =
-    | { name: string; type: 'openai'; baseUrl: string; keyEnv: string }
+    | { name: string; type: 'openai'; baseUrl: string; keyEnv: string; model: string }
     | { name: 'Claude'; type: 'claude' };
 
-  const providerChain: Provider[] = [
-    { name: 'Ollama',    type: 'openai', baseUrl: 'https://ollama.com/v1',           keyEnv: 'OLLAMA_API_KEY' },
-    { name: 'Claude',    type: 'claude' },
-    { name: 'Mammouth',  type: 'openai', baseUrl: 'https://api.mammouth.ai/v1',       keyEnv: 'MAMMOUTH_API_KEY' },
-  ];
+  // NANOCLAW_CLAUDE_ONLY: skip Ollama/Mammouth entirely (used for Dan's main group).
+  // Otherwise: Ollama primary → Mammouth fallback → Claude last resort.
+  const providerChain: Provider[] = process.env.NANOCLAW_CLAUDE_ONLY === '1'
+    ? [{ name: 'Claude' as const, type: 'claude' as const }]
+    : [
+      { name: 'Ollama',   type: 'openai', baseUrl: 'https://ollama.com/v1',         keyEnv: 'OLLAMA_API_KEY',   model: 'deepseek-v3.1:671b' },
+      { name: 'Mammouth', type: 'openai', baseUrl: 'https://api.mammouth.ai/v1',     keyEnv: 'MAMMOUTH_API_KEY', model: 'deepseek-v3.1-terminus' },
+      { name: 'Claude' as const,   type: 'claude' as const },
+    ];
+
+  // Save original model so we can restore it for Claude fallback
+  const claudeSavedModel = process.env.ANTHROPIC_MODEL;
 
   /** Apply a provider to sdkEnv. Returns false if its key is missing. */
   function applyProvider(p: Provider): boolean {
@@ -623,12 +630,19 @@ async function main(): Promise<void> {
       else                     delete sdkEnv['ANTHROPIC_API_KEY'];
       if (claudeSavedBaseUrl)  sdkEnv['ANTHROPIC_BASE_URL'] = claudeSavedBaseUrl;
       else                     delete sdkEnv['ANTHROPIC_BASE_URL'];
+      if (claudeSavedModel)    sdkEnv['ANTHROPIC_MODEL'] = claudeSavedModel;
+      else                     delete sdkEnv['ANTHROPIC_MODEL'];
+      // Remove custom model bypass when restoring Claude — use normal validation
+      delete sdkEnv['ANTHROPIC_CUSTOM_MODEL_OPTION'];
       return true;
     }
     const apiKey = process.env[p.keyEnv];
     if (!apiKey) return false;
     sdkEnv['ANTHROPIC_BASE_URL'] = p.baseUrl;
     sdkEnv['ANTHROPIC_API_KEY']  = apiKey;
+    sdkEnv['ANTHROPIC_MODEL']    = p.model;
+    // Bypass Claude model name validation so non-Claude model names are accepted
+    sdkEnv['ANTHROPIC_CUSTOM_MODEL_OPTION'] = p.model;
     delete sdkEnv['CLAUDE_CODE_OAUTH_TOKEN'];
     return true;
   }
