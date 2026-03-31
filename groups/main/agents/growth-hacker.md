@@ -17,7 +17,7 @@ Analytics, Ads, Marketing Automation, and Market Forecasting.
 | Situation | Model |
 |-----------|-------|
 | Primary — analytics, ad optimisation, market forecasting | `qwen3.5:397b` via Ollama API |
-| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-5-20251001` (Agent SDK) |
+| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-6` (Agent SDK) |
 | Both Ollama and Claude exhausted | `deepseek-r1-0528` via Mammouth API |
 | Specialist: simulation tasks (Mirofish / OASIS hypothesis testing) | `deepseek-r1-0528` via Mammouth API |
 | Specialist: live market intelligence, crypto/NFT trend monitoring | `sonar-deep-research` via Mammouth API |

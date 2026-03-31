@@ -13,7 +13,7 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 | Situation | Model |
 |-----------|-------|
 | Primary — sentiment analysis, community monitoring, response drafting | `mistral-large-3:675b` via Ollama API |
-| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-5-20251001` (Agent SDK) |
+| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-6` (Agent SDK) |
 | Both Ollama and Claude exhausted | `mistral-large-3` via Mammouth API |
 
 Use the Ollama API for the primary model:

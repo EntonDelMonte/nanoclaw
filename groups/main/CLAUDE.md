@@ -17,7 +17,7 @@ You are the primary interface with the user. You classify incoming requests, rou
 | Situation | Model |
 |---|---|
 | Default — routing, heartbeat, classification, simple tasks | `deepseek-v3.1:671b` via Ollama API |
-| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-5-20251001` (Agent SDK) |
+| Claude quota exhausted or Ollama unavailable | `claude-haiku-4-6` (Agent SDK) |
 | Both Ollama and Claude exhausted | `deepseek-v3.1-terminus` via Mammouth API |
 
 ### When to use each
@@ -199,7 +199,7 @@ All agent role definitions live in `/workspace/group/agents/`. Before spawning a
 |------|------|-------|
 | `researcher.md` | Research, vault, knowledge synthesis, strategy, analytics | deepseek-v3.1-terminus (Mammouth) → claude-sonnet-4-6 → qwen3.5:397b (Ollama cloud) |
 | `lead-developer.md` | Code implementation, GitHub, architecture | qwen3-coder-plus (Mammouth) → claude-sonnet-4-6 → qwen3-coder:480b (Ollama cloud) |
-| `copywriter.md` | Copywriting, campaigns, positioning | claude-haiku-4-5-20251001 → qwen3.5:27b (local Ollama) |
+| `copywriter.md` | Copywriting, campaigns, positioning | claude-haiku-4-6 → qwen3.5:27b (local Ollama) |
 | `tribe-hub.md` | Social presence, sentiment analysis, Emotional Detection | mistral-large-3 (Mammouth) → claude-sonnet-4-6 → mistral-large-3:675b (Ollama cloud) |
 | `growth-hacker.md` | Analytics, ads, Mautic marketing automation, market forecasting, Mirofish simulations | minimax-m2.1:cloud → deepseek-r1-0528 (simulations) → sonar-deep-research (market intel) → qwen3.5:27b (local Ollama) |
 | `skill-link.md` | Skill development, SKILL.md authoring, swarm integrations | deepseek-v3.1-terminus → claude-sonnet-4-6 → qwen3.5:397b (Ollama cloud) |
