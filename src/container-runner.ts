@@ -213,8 +213,18 @@ function buildVolumeMounts(
     group.folder,
     'agent-runner-src',
   );
-  if (!fs.existsSync(groupAgentRunnerDir) && fs.existsSync(agentRunnerSrc)) {
-    fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
+  if (fs.existsSync(agentRunnerSrc)) {
+    // Always sync index.ts so core runtime changes (quota fallback, message cap, etc.)
+    // are picked up without needing to delete the per-group directory.
+    // Other files are only seeded on first creation so groups can customise them.
+    if (!fs.existsSync(groupAgentRunnerDir)) {
+      fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
+    } else {
+      fs.copyFileSync(
+        path.join(agentRunnerSrc, 'index.ts'),
+        path.join(groupAgentRunnerDir, 'index.ts'),
+      );
+    }
   }
   mounts.push({
     hostPath: groupAgentRunnerDir,
