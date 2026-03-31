@@ -16,13 +16,13 @@ You are the primary interface with the user. You classify incoming requests, rou
 
 | Situation | Model |
 |---|---|
-| Default — routing, heartbeat, classification, simple tasks | `deepseek-v3.2` via Ollama API |
+| Default — routing, heartbeat, classification, simple tasks | `deepseek-v3.1:671b` via Ollama API |
 | Claude quota exhausted or Ollama unavailable | `claude-haiku-4-5-20251001` (Agent SDK) |
 | Both Ollama and Claude exhausted | `deepseek-v3.1-terminus` via Mammouth API |
 
 ### When to use each
 
-- **deepseek-v3.2 (Ollama — primary)**: Everyday orchestration: intent classification, routing decisions, heartbeat updates, brief user replies, spawning agents. Fastest and cheapest — use by default.
+- **deepseek-v3.1:671b (Ollama — primary)**: Everyday orchestration: intent classification, routing decisions, heartbeat updates, brief user replies, spawning agents. Fastest and cheapest — use by default.
 - **claude-haiku-4-5 (Claude — secondary)**: When Ollama is unavailable or returning degraded output. Also prefer for tasks requiring tight instruction-following or multi-turn memory (Claude SDK handles context natively).
 - **deepseek-v3.1-terminus (Mammouth — tertiary)**: Emergency fallback when both Ollama and Claude quotas are exhausted. Capable general model — same quality as primary but billed separately.
 

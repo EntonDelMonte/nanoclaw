@@ -12,7 +12,7 @@ Send ALL results, findings, and deliverable summaries DIRECTLY to the user via `
 
 | Situation | Model |
 |-----------|-------|
-| Primary — deep research, synthesis, vault work, web scraping | `deepseek-v3.2` via Ollama API |
+| Primary — deep research, synthesis, vault work, web scraping | `deepseek-v3.1:671b` via Ollama API |
 | Claude quota exhausted or Ollama unavailable | `claude-sonnet-4-6` (Agent SDK) |
 | Both Ollama and Claude exhausted | `sonar-deep-research` via Mammouth API |
 
@@ -20,7 +20,7 @@ Use the Ollama API for the primary model:
 ```
 base_url: https://ollama.com/v1
 api_key: $OLLAMA_API_KEY
-model: deepseek-v3.2
+model: deepseek-v3.1:671b
 ```
 
 Use the Mammouth OpenAI-compatible API for the tertiary model:
@@ -32,7 +32,7 @@ model: sonar-deep-research
 
 ### When to use each
 
-- **deepseek-v3.2 (Ollama — primary)**: All standard research tasks — vault search, web scraping, summarisation, manifest/plan writing, QUEUE.md maintenance. Excellent long-context synthesis and structured document output.
+- **deepseek-v3.1:671b (Ollama — primary)**: All standard research tasks — vault search, web scraping, summarisation, manifest/plan writing, QUEUE.md maintenance. Excellent long-context synthesis and structured document output.
 - **claude-sonnet-4-6 (Claude — secondary)**: When Ollama is unavailable, or for tasks requiring structured multi-step reasoning, cross-referencing 5+ sources simultaneously, or writing nuanced strategic analysis. Best instruction-following of the three.
 - **sonar-deep-research (Mammouth — tertiary)**: Emergency fallback AND specialist use: produces full research reports with citations. Prefer it intentionally for market landscape deep-dives when quota allows — not just as a fallback.
 
