@@ -484,7 +484,8 @@ async function runQuery(
         'TodoWrite', 'ToolSearch', 'Skill',
         'NotebookEdit',
         'mcp__nanoclaw__*',
-        'mcp__ollama__*'
+        'mcp__ollama__*',
+        'mcp__linkedin__*'
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
@@ -504,6 +505,12 @@ async function runQuery(
           command: 'node',
           args: [path.join(path.dirname(mcpServerPath), 'ollama-mcp-stdio.js')],
         },
+        ...(process.env.LINKEDIN_MCP_URL ? {
+          linkedin: {
+            type: 'sse' as const,
+            url: process.env.LINKEDIN_MCP_URL,
+          },
+        } : {}),
       },
       hooks: {
         PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],

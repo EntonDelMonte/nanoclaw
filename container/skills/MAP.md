@@ -92,6 +92,7 @@ status: living document — Skill Link updates on every add/change
 | `site-to-skill` | Crawl a site and extract design/content patterns into a skill file |
 | `agent-browser` | Browser automation: research, screenshots, forms, web app testing |
 | `web-scraper` | 3-tier web scraping: WebFetch (static), agent-browser (JS-heavy), Python stdlib (bulk/structured). Covers robots.txt, rate limiting, anti-detection, structured output |
+| `linkedin-scraper` | Scrape LinkedIn profiles, companies, jobs, and posts via `mcp__linkedin__*` tools. Requires host linkedin-mcp-server running. Saves to `scrapes/linkedin/` vault folder |
 
 ---
 

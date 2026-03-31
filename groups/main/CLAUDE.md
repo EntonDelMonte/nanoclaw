@@ -132,6 +132,8 @@ Read `/workspace/group/HEARTBEAT.md` at the start of every session. Update it wh
 
 Keep the `agents` block current — update `status` (active/idle/error) and `last_task` for any agent you spawn.
 
+Also read `/workspace/extra/obsidian/MnemClaw/scrapes/QUEUE.md` and reflect any `in-progress` or `paused` scrape tasks in the heartbeat's `pending:` block. When the user asks to start, pause, or continue a scrape task, update QUEUE.md directly or delegate to the Researcher.
+
 ### Scheduled heartbeat updates — 08:00, 12:00, 18:00 CET
 
 When triggered by the heartbeat schedule, read HEARTBEAT.md and send a status update via `mcp__nanoclaw__send_message`. Format:
@@ -153,6 +155,9 @@ When triggered by the heartbeat schedule, read HEARTBEAT.md and send a status up
 
 *Pending*
 • <blocked task and blocker if any>
+
+*Scrape Queue*
+• <in-progress or paused tasks from QUEUE.md, omit if empty>
 ```
 
 Omit sections with no content. Use _idle_ for agents with no recent task.
