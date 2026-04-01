@@ -1,8 +1,8 @@
 ---
 title: Container Skills — Map of Content
 description: Index of all installed container skills. Read this before searching for a skill.
-updated: 2026-03-27
-last_audit: 2026-03-27 — Skill Link added web-scraper (3-tier: WebFetch / agent-browser / Python stdlib)
+updated: 2026-04-01
+last_audit: 2026-04-01 — Skill Link added firecrawl (deep scraping, crawl, screenshots, PDF via Firecrawl API)
 status: living document — Skill Link updates on every add/change
 ---
 
@@ -91,7 +91,7 @@ status: living document — Skill Link updates on every add/change
 | `youtube-transcriber` | Fetch YouTube transcripts, archive as Markdown in vault |
 | `site-to-skill` | Crawl a site and extract design/content patterns into a skill file |
 | `agent-browser` | Browser automation: research, screenshots, forms, web app testing |
-| `web-scraper` | 3-tier web scraping: WebFetch (static), agent-browser (JS-heavy), Python stdlib (bulk/structured). Covers robots.txt, rate limiting, anti-detection, structured output |
+| `firecrawl` | Deep web scraping, full-site crawling, screenshots, and PDF parsing via Firecrawl API. Use for JS-rendered pages, large-scale scrapes, or bulk URL extraction |
 | `linkedin-scraper` | Scrape LinkedIn profiles, companies, jobs, and posts via `mcp__linkedin__*` tools. Requires host linkedin-mcp-server running. Saves to `scrapes/linkedin/` vault folder |
 
 ---

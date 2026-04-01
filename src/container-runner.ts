@@ -279,6 +279,9 @@ async function buildContainerArgs(
   if (process.env.MAMMOUTH_API_KEY) {
     args.push('-e', `MAMMOUTH_API_KEY=${process.env.MAMMOUTH_API_KEY}`);
   }
+  if (process.env.FIRECRAWL_API_URL) {
+    args.push('-e', `FIRECRAWL_API_URL=${process.env.FIRECRAWL_API_URL}`);
+  }
 
   // Runtime-specific args for host gateway resolution
   args.push(...hostGatewayArgs());
