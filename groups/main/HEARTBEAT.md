@@ -13,7 +13,7 @@ agents:
   researcher:
     model: deepseek-v3.1-terminus (primary) / claude-sonnet-4-6 / llama3.3:70b Ollama cloud (fallback)
     status: idle
-    last_task: trsr project migrated from dox, TSR-mvp.md written, vercel-com site-to-skill crawled
+    last_task: onedoc.ch scrape complete — 552 doctor notes + CSV in MnemClaw/scrapes/onedoc/
   developer:
     model: qwen3-coder-plus (primary) / claude-sonnet-4-6 / qwen3:32b Ollama cloud (fallback)
     status: idle
