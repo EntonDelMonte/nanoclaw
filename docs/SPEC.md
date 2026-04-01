@@ -242,6 +242,8 @@ See existing skills (`/add-whatsapp`, `/add-telegram`, `/add-slack`, `/add-disco
 nanoclaw/
 ├── CLAUDE.md                      # Project context for Claude Code
 ├── docs/
+│   ├── ARCHITECTURE.md            # Fork-specific architecture (MnemClaw/Dan swarm, mounts, agents)
+│   ├── GITHUB-SYNC.md             # Auto-sync launchd job
 │   ├── SPEC.md                    # This specification document
 │   ├── REQUIREMENTS.md            # Architecture decisions
 │   └── SECURITY.md                # Security model
