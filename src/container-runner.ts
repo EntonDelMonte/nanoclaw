@@ -157,7 +157,10 @@ function buildVolumeMounts(
 
   // Inject API keys from host process.env into each group's settings.json.
   // Sourced from .env (single source of truth) — never hardcoded in settings files.
-  const HOST_ENV_KEYS = ['MAMMOUTH_API_KEY'];
+  // ANTHROPIC_BASE_URL + ANTHROPIC_API_KEY: set both to switch containers off Claude
+  // and onto a compatible provider (e.g. Mammouth). They override OneCLI's injection
+  // because settings.json env is merged into the Claude Code process env at startup.
+  const HOST_ENV_KEYS = ['MAMMOUTH_API_KEY', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_API_KEY'];
   const hostEnvToInject = HOST_ENV_KEYS.reduce<Record<string, string>>(
     (acc, key) => {
       if (process.env[key]) acc[key] = process.env[key]!;
@@ -165,9 +168,16 @@ function buildVolumeMounts(
     },
     {},
   );
-  if (Object.keys(hostEnvToInject).length > 0) {
+  if (Object.keys(hostEnvToInject).length > 0 || process.env.CLAUDE_DEFAULT_MODEL) {
     const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
-    settings.env = { ...settings.env, ...hostEnvToInject };
+    if (Object.keys(hostEnvToInject).length > 0) {
+      settings.env = { ...settings.env, ...hostEnvToInject };
+    }
+    // CLAUDE_DEFAULT_MODEL: overrides the model used by the Claude Code SDK shell.
+    // Set to e.g. "kimi-k2.5" to use a Mammouth model instead of claude-sonnet-4-6.
+    if (process.env.CLAUDE_DEFAULT_MODEL) {
+      settings.model = process.env.CLAUDE_DEFAULT_MODEL;
+    }
     fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
   }
 

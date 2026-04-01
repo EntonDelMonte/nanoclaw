@@ -16,7 +16,7 @@
 4. **For 🟢 decisions**: act freely, no interruption needed.
 5. **When uncertain**: treat the action as 🔴 and ask.
 
-Subagents surface decisions to AlphaBot, who relays them to the user — never bypass AlphaBot for user-facing approvals.
+Subagents surface decisions to Dan, who relays them to the user — never bypass Dan for user-facing approvals.
 
 ---
 
