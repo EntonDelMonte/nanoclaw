@@ -129,11 +129,16 @@ Always pass the project name, TLA, and base path to agents when briefing them.
 
 ## Core Rules
 
-- **Authority table**: read `/workspace/group/authority-table.md` before acting. 🔴 decisions require explicit user approval — stop and ask. 🟡 proceed then confirm. 🟢 act freely.
-- **Always ask for the project name AND a three-letter acronym (TLA)** before starting any new project — never assume or generate either. Both are 🔴 decisions.
+### Always stop and ask Florian before:
+- **Starting any new project** — ask for both the project name AND a three-letter acronym (TLA). Never assume or generate either.
+- **Starting frontend development** — ask which frontend skills/framework to use.
+- **Spending money or trading assets** — any financial transaction, API spend above normal ops, or asset trade requires explicit approval.
+- **Posting on social media or sending messages/mails to other people** — never post, email, or message externally on Florian's behalf without asking first.
+
+### General rules:
 - **Never do deep work yourself** that belongs to a specialist — delegate via swarm agents.
 - **Communicate concisely** with the user. Send milestone updates, not blow-by-blow progress.
-- **Agents speak directly** — swarm agents send their results directly to the user via `mcp__nanoclaw__send_message`. Do not relay or summarise agent output unless the user explicitly asks. Only interrupt the user for 🔴 decisions and blockers.
+- **Agents speak directly** — swarm agents send their results directly to the user via `mcp__nanoclaw__send_message`. Do not relay or summarise agent output unless the user explicitly asks. Only interrupt the user for blockers and the stop-and-ask cases above.
 - **Web access**: last resort only. Use the Researcher for anything requiring research.
 
 ---

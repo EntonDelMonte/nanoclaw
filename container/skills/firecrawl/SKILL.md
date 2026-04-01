@@ -240,50 +240,144 @@ Common errors:
 
 ## Vault archiving pattern
 
-After scraping, save to vault using the standard note format:
+Every scrape goes to `/workspace/extra/obsidian/MnemClaw/scrapes/<site-folder>/` — one subfolder per website, one `.md` file per page, plus a `<site>.csv` with one row per page.
+
+### Folder structure
+
+```
+scrapes/
+└── onedoc/
+    ├── CRAWL_STATUS.json     ← resumable crawl state (see below)
+    ├── onedoc.csv            ← one row per entry, all attributes as columns
+    ├── MAP.md                ← index (create when 3+ files exist)
+    └── dr-med-saskia-herrmann.md
+    └── ...
+```
+
+### Markdown note format (one per page)
+
+Extract all available structured fields from the scraped content and put them in YAML front-matter. Body should be a clean human-readable summary.
 
 ```python
-import os, datetime
+import os, re, datetime, unicodedata
 
-def save_scrape_to_vault(url, markdown, title):
-    slug = title.lower().replace(" ", "-")
+def slugify(text):
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+def save_page(site_folder, slug, fields: dict, body: str):
+    """
+    site_folder: e.g. "onedoc"
+    slug:        unique slug for this page (from URL or title)
+    fields:      dict of all extracted structured attributes
+    body:        clean markdown body text
+    """
     today = datetime.date.today().isoformat()
+    vault_dir = f"/workspace/extra/obsidian/MnemClaw/scrapes/{site_folder}"
+    os.makedirs(vault_dir, exist_ok=True)
 
-    note = f"""---
-title: "{title}"
-source: "{url}"
-scraped: {today}
-maturity: raw
-status: inbox
-tags:
-  - web-scrape
-  - firecrawl
-description: "Scraped content from {url}"
----
+    # Build YAML front-matter from all fields
+    yaml_lines = ["---"]
+    for k, v in fields.items():
+        if isinstance(v, list):
+            yaml_lines.append(f"{k}:")
+            for item in v:
+                yaml_lines.append(f"  - {item}")
+        elif isinstance(v, bool):
+            yaml_lines.append(f"{k}: {'true' if v else 'false'}")
+        else:
+            safe = str(v).replace('"', '\\"')
+            yaml_lines.append(f'{k}: "{safe}"')
+    yaml_lines += [
+        f'scraped: "{today}"',
+        'maturity: raw',
+        'status: inbox',
+        'tags:',
+        '  - web-scrape',
+        '  - firecrawl',
+        f'  - {site_folder}',
+        '---',
+    ]
 
-# {title}
+    note = "\n".join(yaml_lines) + f"\n\n{body}\n\n---\n\n## JTAG Annotation\n\n- **Type**: Web Scrape\n- **Scope**: {site_folder}\n- **Maturity**: Raw\n- **Cross-links**: [[{site_folder} MAP]]\n"
 
-> *Scraped from: `{url}` on {today}*
-
----
-
-{markdown}
-
----
-
-## JTAG Annotation
-Type: Web Scrape
-Scope: <topic>
-Maturity: Raw — unreviewed scraped content
-Cross-links: <[[related notes]]>
-Key Components: <main topics found>
-"""
-
-    vault_path = f"/workspace/extra/obsidian/MnemClaw/scrapes/{slug}.md"
-    os.makedirs(os.path.dirname(vault_path), exist_ok=True)
-    with open(vault_path, "w") as f:
+    path = f"{vault_dir}/{slug}.md"
+    with open(path, "w") as f:
         f.write(note)
-    print(f"Saved: {vault_path}")
+    return path
+```
+
+### CSV export (one row per page, all attributes as columns)
+
+Use `csv.DictWriter` with `extrasaction="ignore"`. Multi-value fields (lists) as semicolon-separated strings. **Always open in append mode with `newline=""`** so partial runs don't lose data.
+
+```python
+import csv, os
+
+def append_to_csv(site_folder, fieldnames, row: dict):
+    csv_path = f"/workspace/extra/obsidian/MnemClaw/scrapes/{site_folder}/{site_folder}.csv"
+    write_header = not os.path.exists(csv_path)
+    # Flatten lists to semicolon strings
+    flat = {k: (";".join(v) if isinstance(v, list) else v) for k, v in row.items()}
+    with open(csv_path, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        if write_header:
+            writer.writeheader()
+        writer.writerow(flat)
+```
+
+---
+
+## Resumable crawl status
+
+For any bulk scrape, maintain a compact `CRAWL_STATUS.json` in the site folder. Read it at the start of every run to skip already-completed URLs. Write it after every saved page.
+
+### Format
+
+```json
+{
+  "site": "onedoc",
+  "started": "2026-04-01",
+  "updated": "2026-04-01T19:30:00",
+  "total_discovered": 850,
+  "done": ["slug-1", "slug-2", "..."],
+  "failed": [{"slug": "slug-x", "url": "...", "error": "timeout"}],
+  "queue": ["slug-3", "slug-4", "..."]
+}
+```
+
+### Usage pattern
+
+```python
+import json, os, datetime
+
+STATUS_PATH = "/workspace/extra/obsidian/MnemClaw/scrapes/{site}/{site}.CRAWL_STATUS.json"
+
+def load_status(site):
+    path = STATUS_PATH.format(site=site)
+    if os.path.exists(path):
+        with open(path) as f:
+            return json.load(f)
+    return {"site": site, "started": datetime.date.today().isoformat(),
+            "done": [], "failed": [], "queue": []}
+
+def save_status(site, status):
+    path = STATUS_PATH.format(site=site)
+    status["updated"] = datetime.datetime.now().isoformat(timespec="seconds")
+    with open(path, "w") as f:
+        json.dump(status, f, indent=2)
+
+# At start of run:
+status = load_status("onedoc")
+done_set = set(status["done"])
+
+# Before scraping each URL:
+if slug in done_set:
+    continue  # already done — skip
+
+# After saving a page successfully:
+status["done"].append(slug)
+save_status("onedoc", status)
 ```
 
 ---
@@ -292,7 +386,10 @@ Key Components: <main topics found>
 
 - Always set `FIRECRAWL_URL="${FIRECRAWL_API_URL:-http://host.docker.internal:3002}"` at the top of each script block
 - Use `"onlyMainContent": true` (default) for research — strips ads, nav, footers
-- For JS-heavy pages, add `"waitFor": 2000`–`5000` ms
+- **Always use `"waitFor": 2000`–`5000` ms** for JS-heavy pages to capture dynamically rendered data (addresses, phone numbers, prices, etc.)
 - Batch scrape rather than looping single scrapes when you have 5+ URLs
-- Save scraped content to `/workspace/extra/obsidian/MnemClaw/scrapes/` with proper JTAG front-matter
-- Update `QUEUE.md` when starting/completing bulk scrape tasks
+- **Save to `scrapes/<site-folder>/`** — one subfolder per website, never dump files in the scrapes root
+- **One `.md` per page** with all structured attributes in YAML front-matter
+- **One CSV per site** (`<site>.csv`) — append mode, one row per page, all attributes as columns
+- **Maintain `CRAWL_STATUS.json`** — write after every saved page so any interruption is resumable
+- Update `QUEUE.md` when starting/pausing/completing bulk scrape tasks
