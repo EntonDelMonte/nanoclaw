@@ -27,8 +27,20 @@ import {
 import { OneCLI } from '@onecli-sh/sdk';
 import { validateAdditionalMounts } from './mount-security.js';
 import { RegisteredGroup } from './types.js';
+import { readEnvFile } from './env.js';
 
 const onecli = new OneCLI({ url: ONECLI_URL });
+
+// Provider-specific keys read from .env (single source of truth).
+// Falls back to process.env for keys set via launchd EnvironmentVariables.
+const PROVIDER_ENV_KEYS = [
+  'MAMMOUTH_API_KEY', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_API_KEY',
+  'CLAUDE_DEFAULT_MODEL', 'OLLAMA_API_KEY', 'FIRECRAWL_API_URL',
+];
+const _dotEnv = readEnvFile(PROVIDER_ENV_KEYS);
+function getProviderEnv(key: string): string | undefined {
+  return process.env[key] || _dotEnv[key];
+}
 
 // Sentinel markers for robust output parsing (must match agent-runner)
 const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
@@ -163,20 +175,22 @@ function buildVolumeMounts(
   const HOST_ENV_KEYS = ['MAMMOUTH_API_KEY', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_API_KEY'];
   const hostEnvToInject = HOST_ENV_KEYS.reduce<Record<string, string>>(
     (acc, key) => {
-      if (process.env[key]) acc[key] = process.env[key]!;
+      const val = getProviderEnv(key);
+      if (val) acc[key] = val;
       return acc;
     },
     {},
   );
-  if (Object.keys(hostEnvToInject).length > 0 || process.env.CLAUDE_DEFAULT_MODEL) {
+  const defaultModel = getProviderEnv('CLAUDE_DEFAULT_MODEL');
+  if (Object.keys(hostEnvToInject).length > 0 || defaultModel) {
     const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
     if (Object.keys(hostEnvToInject).length > 0) {
       settings.env = { ...settings.env, ...hostEnvToInject };
     }
     // CLAUDE_DEFAULT_MODEL: overrides the model used by the Claude Code SDK shell.
     // Set to e.g. "kimi-k2.5" to use a Mammouth model instead of claude-sonnet-4-6.
-    if (process.env.CLAUDE_DEFAULT_MODEL) {
-      settings.model = process.env.CLAUDE_DEFAULT_MODEL;
+    if (defaultModel) {
+      settings.model = defaultModel;
     }
     fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
   }
@@ -283,14 +297,27 @@ async function buildContainerArgs(
 
   // Inject non-Anthropic provider keys for swarm agent fallback chain.
   // OneCLI handles Anthropic credentials; Ollama and Mammouth are injected here.
-  if (process.env.OLLAMA_API_KEY) {
-    args.push('-e', `OLLAMA_API_KEY=${process.env.OLLAMA_API_KEY}`);
-  }
-  if (process.env.MAMMOUTH_API_KEY) {
-    args.push('-e', `MAMMOUTH_API_KEY=${process.env.MAMMOUTH_API_KEY}`);
-  }
-  if (process.env.FIRECRAWL_API_URL) {
-    args.push('-e', `FIRECRAWL_API_URL=${process.env.FIRECRAWL_API_URL}`);
+  const ollamaKey = getProviderEnv('OLLAMA_API_KEY');
+  if (ollamaKey) args.push('-e', `OLLAMA_API_KEY=${ollamaKey}`);
+  const mammouthKey = getProviderEnv('MAMMOUTH_API_KEY');
+  if (mammouthKey) args.push('-e', `MAMMOUTH_API_KEY=${mammouthKey}`);
+  const firecrawlUrl = getProviderEnv('FIRECRAWL_API_URL');
+  if (firecrawlUrl) args.push('-e', `FIRECRAWL_API_URL=${firecrawlUrl}`);
+
+  // When ANTHROPIC_BASE_URL points to a non-Anthropic provider, add that hostname
+  // to no_proxy as a Docker -e flag (not settings.json) so undici reads it at
+  // process startup before any HTTP clients are initialized. This prevents
+  // OneCLI's HTTPS proxy from intercepting requests to the provider and
+  // replacing the Authorization header with the Anthropic credential.
+  const altBaseUrl = getProviderEnv('ANTHROPIC_BASE_URL');
+  if (altBaseUrl) {
+    try {
+      const providerHost = new URL(altBaseUrl).hostname;
+      args.push('-e', `no_proxy=${providerHost}`);
+      args.push('-e', `NO_PROXY=${providerHost}`);
+    } catch {
+      // ignore malformed URL
+    }
   }
 
   // Runtime-specific args for host gateway resolution
