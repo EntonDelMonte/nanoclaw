@@ -405,4 +405,24 @@ Before publishing, verify:
 
 ---
 
+## Development Resources (www-impeccable Integration)
+
+Apply these landing page patterns using the www-impeccable skill stack:
+
+### Foundation Layer
+- **HTML-Semantics** — Use correct landmark elements (`<header>`, `<main>`, `<section>`, `<footer>`) for accessibility and SEO
+- **CSS-Mastery** — Grid/Flexbox for section layouts, custom properties for brand colors
+- **TypeScript-Patterns** — Type your CTA event handlers, form validation logic
+
+### Component Implementation
+- **Component-Architecture** — Build reusable `Hero`, `FeatureCard`, `PricingTier`, `TestimonialSlider` components
+- **Design-Tokens** — Map brand colors to `--color-primary`, spacing to `--space-*` scales
+- **Animation-UX** — Subtle entrance animations (framer-motion `motion.div` with `initial/animate`)
+
+### Performance Optimization
+- **Core-Web-Vitals** — Preload hero image for LCP, reserve space to prevent CLS
+- **Build-Optimisation** — Code-split below-fold sections, lazy-load testimonial images
+
+---
+
 Last updated: 2026-04-04 | Applicable across: Technology, Consumer Products, Professional Services, Education, Creative Services, Events, Non-profits
