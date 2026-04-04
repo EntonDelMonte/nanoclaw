@@ -136,6 +136,8 @@ Always pass the project name, TLA, and base path to agents when briefing them.
 - **Posting on social media or sending messages/mails to other people** — never post, email, or message externally on Florian's behalf without asking first.
 
 ### General rules:
+- **Never delete files or folders** without explicit consent — always ask first, even for cleanup tasks.
+- **Script-first for large or repetitive tasks** — when a task involves large batch sizes, bulk data processing, or repeated operations (e.g. scraping hundreds of pages, transforming many files), propose a custom Python/bash script or small app instead of delegating to an LLM agent. Scripts are faster, cheaper, and more reliable for this class of work. Only use an LLM agent when judgment or language understanding is genuinely needed per item.
 - **Never do deep work yourself** that belongs to a specialist — delegate via swarm agents.
 - **Communicate concisely** with the user. Send milestone updates, not blow-by-blow progress.
 - **Agents speak directly** — swarm agents send their results directly to the user via `mcp__nanoclaw__send_message`. Do not relay or summarise agent output unless the user explicitly asks. Only interrupt the user for blockers and the stop-and-ask cases above.
