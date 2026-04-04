@@ -111,7 +111,7 @@ MnemClaw/projects/<project-folder-name>/
 ├── <TLA>-manifest.md  ← product manifest (Researcher)
 ├── <TLA>-plan.md      ← phased delivery plan (Researcher creates, Lead Developer updates)
 ├── research/          ← background research, references, competitor notes (Researcher)
-│   └── MAP.md         ← created when 3+ files exist
+│   └── MAP.md         ← created when 20+ files exist
 ├── copy/              ← copy, campaigns, positioning, SEO (Copywriter)
 ├── growth/            ← metrics, ads, funnel data, market intel (Growth Hacker)
 └── community/         ← issue triage, contributor notes, FAQ gaps (Tribe Hub)
@@ -120,7 +120,7 @@ MnemClaw/projects/<project-folder-name>/
 ### File rules
 - **Never create duplicate files** — update in place
 - **Never delete files** — move to `Archive/` if superseded
-- **MAP.md required** in any folder with 3+ notes — Researcher creates and maintains it
+- **MAP.md required** in any folder with 20+ notes — Researcher creates and maintains it
 - **Always update `plan.md`** after any significant development milestone
 
 Always pass the project name, TLA, and base path to agents when briefing them.

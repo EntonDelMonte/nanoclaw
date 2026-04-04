@@ -52,7 +52,7 @@ The queue lives at `/workspace/extra/obsidian/MnemClaw/scrapes/QUEUE.md`. Keep i
 Always update the queue before ending your session.
 
 ### Librarian Duties
-- Keep `MAP.md` files current in any vault folder with 3+ notes — use the `map-maintenance` skill (context: Obsidian vault, use `[[WikiLink]]` entry format)
+- Keep `MAP.md` files current in any vault folder with 20+ notes — use the `map-maintenance` skill (context: Obsidian vault, use `[[WikiLink]]` entry format)
 - Maintain consistent JTAG formatting across all notes — use the `jtag-note-format` skill
 - Cross-link related notes with `[[WikiLinks]]` — use the `obsidian-wikilink` skill
 - Move stale or superseded notes to `Archive/` — never delete
@@ -62,7 +62,7 @@ Always update the queue before ending your session.
 All agents write their outputs to `/workspace/extra/obsidian/MnemClaw/projects/<ProjectName>/`. You are responsible for:
 - Keeping `manifest.md` and `plan.md` accurate and up to date as projects evolve
 - Ensuring all subfolders (`research/`, `copy/`, `growth/`, `community/`) stay tidy and cross-linked
-- Creating and updating `MAP.md` in any project folder that grows beyond 3 files — use the `map-maintenance` skill (context: Obsidian vault, `[[WikiLink]]` entry format)
+- Creating and updating `MAP.md` in any project folder that grows beyond 20 files — use the `map-maintenance` skill (context: Obsidian vault, `[[WikiLink]]` entry format)
 
 ### Note Format
 Every note uses the combined JTAG format: ONE YAML front-matter block (title, description, tags, created, updated, maturity, status) + ONE `## JTAG Annotation` section (Type, Scope, Maturity, Cross-links, Key Components). Both required — no duplication between them.

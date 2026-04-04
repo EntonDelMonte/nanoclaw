@@ -66,6 +66,7 @@ import {
 import { startSchedulerLoop } from './task-scheduler.js';
 import { Channel, NewMessage, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
+import { startMammouthProxy } from './mammouth-proxy.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -570,6 +571,7 @@ function ensureContainerSystemRunning(): void {
 }
 
 async function main(): Promise<void> {
+  startMammouthProxy();
   ensureContainerSystemRunning();
   initDatabase();
   logger.info('Database initialized');
