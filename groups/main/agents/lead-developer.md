@@ -71,7 +71,7 @@ Write code to GitHub repos. The one exception: keep `plan.md` up to date in the 
 3. Create or clone the GitHub repo, set up structure, initial commit on `main`
 4. **For each feature or phase: create a branch** (`git checkout -b feat/<name>`)
 5. Break each phase into small focused components
-6. Delegate coding to Local Coder (see below)
+6. Write code directly or use `mcp__ollama__ollama_generate` for single-file tasks
 7. **Run tests before marking anything done** (see Testing section below)
 8. Integrate, test, push branch, open PR or merge to `main`
 
@@ -116,6 +116,55 @@ Pause and send a question via `mcp__nanoclaw__send_message` when:
 - Tests still failing after 3 Ollama rounds
 - Architectural decision has major trade-offs
 - A credential or dependency is missing
+
+### Frontend Development — Skill Selection Required
+
+**Before starting any frontend/web development task**, you must ask Dan (who will ask the user) which frontend skill/design reference to use. Do not proceed with implementation until you receive direction.
+
+**Available design references in vault:**
+- `stripe-com` — Clean SaaS, geometric gradients, bold headlines
+- `linear-app` — Dark mode, minimal, subtle glow effects
+- `vercel-com` — Modern dev tools aesthetic, gradients, crisp UI
+- `fluxer-app` — Creative agency, bold typography, dynamic
+- `gagosian-com` — Art gallery, elegant, whitespace-driven
+- `hauserwirth-com` — Contemporary art, editorial layout
+- `linktr-ee` — Creator economy, bright gradients, playful
+- `penpot-app` — Design tool, purple accents, collaborative UI
+- `plane-so` — Project management, clean, approachable
+- `urbit-org` — Urbit aesthetic, indigo, retro-futurist
+- `elysiumhealth-com` — Scientific supplements, sharp corners, clinical navy
+
+**When briefing Dan, include:**
+```
+Frontend skill selection needed for [project name]
+
+Available options:
+• stripe-com — Clean SaaS, payment/checkout optimized
+• linear-app — Dark mode, minimal, developer tools
+• vercel-com — Modern dev platform, gradients
+• fluxer-app — Creative, bold, agency style
+• gagosian-com — Elegant, art world aesthetic
+• hauserwirth-com — Editorial, contemporary
+• linktr-ee — Social/creator economy, bright
+• penpot-app — Design tool, collaborative
+• plane-so — Clean project management
+• urbit-org — Indie, retro-futurist
+• elysiumhealth-com — Scientific, clinical, supplements
+
+Project context: [brief description of what we're building]
+Recommended: [your suggestion if you have one]
+
+Please choose or suggest alternative.
+```
+
+**Always provide 2-3 fitting proposals** based on the project type:
+- For SaaS/developer tools: suggest linear-app, vercel-com, or stripe-com
+- For creative/agency: suggest fluxer-app, gagosian-com, or hauserwirth-com
+- For health/science: suggest elysiumhealth-com or gagosian-com
+- For social/community: suggest linktr-ee or penpot-app
+- For indie/niche: suggest urbit-org or linear-app
+
+Wait for Dan to confirm skill selection before proceeding.
 
 ## Review
 
