@@ -34,7 +34,6 @@ status: living document — Skill Link updates on every add/change
 | `unit-testing` | Vitest + React Testing Library: component tests, mocking, coverage |
 | `web-self-testing` | Playwright headless E2E: container-safe flags, page objects, CI YAML |
 | `plan-md-update` | vault plan.md update workflow: phase status, milestones, blockers |
-| `skill-candidate-reporting` | Deposit skill discovery notes to /workspace/group/skill-candidates/ |
 
 ---
 

@@ -22,7 +22,7 @@ NanoClaw is a single Node.js process running on the host machine. It listens on 
 │  │  Scheduler     → src/task-scheduler.ts         │    │
 │  │  IPC watcher   → src/ipc.ts                    │    │
 │  │  Database      → src/db.ts (SQLite)            │    │
-│  │  Cred Proxy    → src/credential-proxy.ts :3001 │    │
+│  │  Mammouth Proxy→ src/mammouth-proxy.ts :3099   │    │
 │  └──────────────────┬─────────────────────────────┘    │
 │                     │ spawn container per group         │
 │  ┌──────────────────▼─────────────────────────────┐    │
@@ -53,7 +53,7 @@ NanoClaw is a single Node.js process running on the host machine. It listens on 
 | `src/task-scheduler.ts` | Runs cron/interval scheduled tasks by re-triggering containers |
 | `src/ipc.ts` | Watches `data/ipc/<group>/` for agent-initiated tasks and follow-up messages |
 | `src/db.ts` | SQLite store — messages, sessions, groups, tasks, router state |
-| `src/credential-proxy.ts` | HTTP proxy on `:3001` — injects API keys into containers; secrets never mounted |
+| `src/mammouth-proxy.ts` | HTTP adapter on `:3099` — receives Anthropic-format requests, rewrites model to `kimi-k2.5`, injects Mammouth API key, forwards to `api.mammouth.ai` |
 | `src/config.ts` | Central config — paths, timeouts, trigger pattern, container image name |
 
 ---
@@ -173,33 +173,60 @@ Available to the main group container. Dan and all agents search here before the
 
 ## Credential Flow
 
-Secrets (API keys, tokens) are **never** mounted into containers. Instead:
+Secrets (API keys, tokens) are **never** mounted into containers. `.env` is explicitly shadowed to `/dev/null` inside the main group container.
 
-1. Host process reads secrets from `.env` at startup
-2. Credential proxy listens on `localhost:3001`
-3. Containers connect to the proxy via host gateway (`host.docker.internal`)
-4. Proxy injects credentials into the Claude SDK at runtime
+### OneCLI Gateway
 
-`.env` is explicitly shadowed to `/dev/null` inside the main group container.
+OneCLI (`@onecli-sh/sdk`) handles Anthropic credentials. `container-runner.ts` calls `onecli.applyContainerConfig(args)` which adds two Docker env vars to every container spawn:
 
-Per-group secrets (e.g. `GITHUB_TOKEN`, `MAMMOUTH_API_KEY`) are injected via `data/sessions/<folder>/.claude/settings.json` `env` block. `OLLAMA_API_KEY` and `MAMMOUTH_API_KEY` are also passed directly as Docker `-e` env vars so the agent-runner can use them for SDK-level quota fallback without going through the proxy.
+- `HTTPS_PROXY=<onecli-url>` — OneCLI's HTTPS MITM proxy; intercepts all outbound HTTPS traffic from containers
+- `CLAUDE_CODE_OAUTH_TOKEN=<token>` — long-lived token injected into requests to Anthropic
+
+### Mammouth Adapter Proxy
+
+Dan runs on kimi-k2.5 via Mammouth rather than Anthropic. The Mammouth proxy (`src/mammouth-proxy.ts`) runs on port 3099 of the host and is started at NanoClaw startup.
+
+**Why a proxy is needed:**
+- OneCLI intercepts all container HTTPS traffic and replaces the Authorization header with an Anthropic token — direct container → `api.mammouth.ai` calls would have their auth overwritten
+- The Claude Code SDK validates model names against its known list; `kimi-k2.5` is not a Claude model name and is rejected before any network call
+
+**How it works:**
+1. Container's Claude Code SDK sends requests to `http://host.docker.internal:3099` (HTTP → not intercepted by OneCLI's HTTPS proxy)
+2. Host-side proxy receives the Anthropic-format request
+3. Proxy replaces `Authorization` header with the real Mammouth API key
+4. Proxy rewrites the `model` field to `kimi-k2.5`
+5. Proxy forwards to `https://api.mammouth.ai/v1` (from the host process, outside the container — outside OneCLI scope)
+
+**Relevant `.env` keys:**
+
+| Key | Value | Purpose |
+|---|---|---|
+| `ANTHROPIC_BASE_URL` | `http://host.docker.internal:3099` | Points Claude Code SDK at the local proxy |
+| `ANTHROPIC_API_KEY` | `mammouth-proxy` | Dummy — proxy replaces it with `MAMMOUTH_API_KEY` |
+| `CLAUDE_DEFAULT_MODEL` | `claude-sonnet-4-6` | Valid Claude model name; proxy remaps to `MAMMOUTH_TARGET_MODEL` |
+| `MAMMOUTH_TARGET_MODEL` | `kimi-k2.5` | The model the proxy rewrites all requests to |
+| `MAMMOUTH_API_KEY` | `sk-...` | Real Mammouth API key — only used by the host-side proxy |
+
+### Other Provider Keys
+
+Per-group secrets (e.g. `GITHUB_TOKEN`, `MAMMOUTH_API_KEY`) are injected via `data/sessions/<folder>/.claude/settings.json` `env` block. `OLLAMA_API_KEY` and `MAMMOUTH_API_KEY` are also passed directly as Docker `-e` env vars so the agent-runner can use them for direct Mammouth/Ollama API calls.
 
 ### SDK-Level Quota Fallback
 
-The credential proxy handles HTTP 429/529 from Anthropic. But the Claude MAX plan fires `rate_limit_event` at the SDK level before any HTTP request is made — the proxy never sees it. The agent-runner detects this and switches providers directly:
+The Claude MAX plan fires `rate_limit_event` at the SDK level before any HTTP request — OneCLI never sees it. The agent-runner detects this and switches providers:
 
-1. Claude (via credential proxy) — primary
+1. kimi-k2.5 via Mammouth proxy (primary) — for Dan
 2. Ollama `deepseek-v3.1:671b` at `https://ollama.com/v1` — first fallback
 3. Mammouth `deepseek-v3.1-terminus` at `https://api.mammouth.ai/v1` — second fallback
 
-Session is reset on provider switch (can't resume Claude sessions on other providers). Implemented in `container/agent-runner/src/index.ts` (`fallbackChain`, `quotaExhausted` detection).
+Session is reset on provider switch. Implemented in `container/agent-runner/src/index.ts` (`fallbackChain`, `quotaExhausted` detection).
 
 ### External API Providers
 
 | Provider | Purpose | Key |
 |---|---|---|
-| Anthropic | Claude Agent SDK (all agents) | via credential proxy |
-| Mammouth (`api.mammouth.ai/v1`) | OpenAI-compatible gateway — DeepSeek, Mistral, Sonar, Qwen, MiniMax | `MAMMOUTH_API_KEY` |
+| Mammouth (`api.mammouth.ai/v1`) | Dan's primary model (kimi-k2.5) via local proxy; also used by swarm agents directly | `MAMMOUTH_API_KEY` |
+| Anthropic | Claude Agent SDK fallback; OneCLI injects token | via OneCLI |
 | Ollama cloud (`ollama.com/v1`) | Cloud-hosted open models — `deepseek-v3.1:671b` | `OLLAMA_API_KEY` |
 | Ollama (local) | Local models — `qwen3.5:9b`, `minimax-m2:cloud`, `minimax-m2.1:cloud` | no key required |
 
@@ -263,7 +290,7 @@ Pool bots rename via `setMyName` whenever a different sender takes over a bot sl
 | `tribe-hub.md` | Tribe Hub | `mistral-large-3` (Mammouth) | Social presence, sentiment analysis, Emotional Detection | `community/` |
 | `growth-agent.md` | Growth Agent | `minimax-m2.1:cloud` (Ollama) | Analytics, ads, Mautic automation, market forecasting | `analytics/` |
 
-**Dan's model chain:** `claude-haiku-4-5` (primary) → `claude-sonnet-4-6` (complex) → `deepseek-v3.1-terminus` via Mammouth (Claude quota exhausted) → `llama4-maverick` via Ollama API (Mammouth unavailable) → `qwen3.5:9b` local (lightweight only)
+**Dan's model:** `kimi-k2.5` via Mammouth proxy (transparent — Claude Code SDK sees `claude-sonnet-4-6`, proxy rewrites to `kimi-k2.5` before forwarding). Fallback chain: Ollama `deepseek-v3.1:671b` → Mammouth `deepseek-v3.1-terminus` → `qwen3.5:9b` local.
 
 **Model fallback chain for swarm agents:** primary cloud model → Claude 4.6 Sonnet (complex tasks) → `qwen3.5:9b` (Ollama local fallback)
 
@@ -295,7 +322,7 @@ MnemClaw/scrapes/
 
 - Folder name = domain short name (kebab-case, no TLD)
 - One file per scraped unit
-- `MAP.md` created once a site folder has 3+ files
+- `MAP.md` created once a site folder has 20+ files
 
 Container path: `/workspace/extra/obsidian/MnemClaw/scrapes/<site>/<slug>.md`
 

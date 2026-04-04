@@ -44,8 +44,14 @@ export function startMammouthProxy(): http.Server | null {
     req.on('end', () => {
       let body = Buffer.concat(chunks);
 
-      // Rewrite model field in /v1/messages requests
-      if (req.method === 'POST' && req.url === '/v1/messages') {
+      // Log every incoming request so we can see what the SDK actually sends
+      const urlPath = (req.url ?? '/').split('?')[0];
+      logger.debug({ method: req.method, url: req.url }, 'Mammouth proxy: request received');
+
+      // Rewrite model field in messages requests.
+      // Use endsWith rather than exact match — the SDK may send /messages or
+      // /v1/messages, and query strings are stripped before comparison.
+      if (req.method === 'POST' && urlPath.endsWith('/messages')) {
         try {
           const json = JSON.parse(body.toString('utf-8')) as Record<
             string,
