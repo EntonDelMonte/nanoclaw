@@ -122,16 +122,20 @@ TEXT=$(curl -s "$WHISPER_URL/inference" \
 
 ---
 
-### 3. Clean the VTT into prose (Path A continuation)
+### 3. Clean the VTT into prose and split into chunks (Path A continuation)
 
-VTT files have timestamps and duplicate lines. Clean with Python:
+VTT auto-captions contain timestamps, duplicate cue lines, and a `word< word` artifact from the timed-text prediction stream. Clean aggressively and split into ~8 KB chunks for structured formatting:
 
 ```bash
-python3 << 'EOF'
-import re, sys, glob, os
+python3 << 'PYEOF'
+import re, sys, glob, os, json
+
+WORK_DIR = sys.argv[1]
+CHUNK_DIR = sys.argv[2]  # e.g. /tmp/transcript_chunks
+os.makedirs(CHUNK_DIR, exist_ok=True)
 
 # Find the downloaded .vtt file
-vtt_files = glob.glob(os.path.join(sys.argv[1], "*.vtt"))
+vtt_files = glob.glob(os.path.join(WORK_DIR, "*.vtt"))
 if not vtt_files:
     print("NO_TRANSCRIPT")
     sys.exit(0)
@@ -140,20 +144,19 @@ vtt_path = vtt_files[0]
 with open(vtt_path, encoding="utf-8") as f:
     raw = f.read()
 
-# Remove WEBVTT header and NOTE blocks
+# 1. Remove WEBVTT header, NOTE blocks, and timestamp lines
 raw = re.sub(r'WEBVTT.*?\n\n', '', raw, flags=re.DOTALL)
 raw = re.sub(r'NOTE\s.*?\n\n', '', raw, flags=re.DOTALL)
-
-# Remove timestamp lines (00:00:00.000 --> 00:00:00.000 ...)
 raw = re.sub(r'\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}.*\n', '', raw)
-
-# Remove cue identifiers (standalone numbers/words before timestamps)
 raw = re.sub(r'^\w+\n', '', raw, flags=re.MULTILINE)
 
-# Remove HTML tags (<c>, <i>, <b>, timing tags)
-raw = re.sub(r'<[^>]+>', '', raw)
+# 2. Remove HTML/timing tags including the timed-text prediction artifact:
+#    Each caption cue shows rolling word predictions separated by `word< nextword`.
+#    Removing `\S+< ` strips the stale prediction half, keeping the clean continuation.
+raw = re.sub(r'<[^>]+>', '', raw)       # Remove <c>, <i>, <b> HTML tags
+raw = re.sub(r'\S+< ', '', raw)         # Remove word< prediction artifacts
 
-# Split into lines, deduplicate consecutive identical fragments
+# 3. Deduplicate consecutive identical lines (VTT cue overlap)
 lines = [l.strip() for l in raw.splitlines() if l.strip()]
 deduped = []
 prev = None
@@ -162,13 +165,80 @@ for line in lines:
         deduped.append(line)
     prev = line
 
-# Join into paragraphs: split on long gaps (lines ending with . ? !)
+# 4. Join and remove consecutive duplicate words
 text = ' '.join(deduped)
-# Add paragraph breaks after sentence-ending punctuation followed by capital letter
-text = re.sub(r'([.!?])\s+([A-Z])', r'\1\n\n\2', text)
+text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text)
+text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text)  # second pass for triple duplicates
+text = re.sub(r'  +', ' ', text).strip()
 
-print(text.strip())
-EOF
+# 5. Split into ~8000-char chunks at sentence boundaries
+CHUNK_SIZE = 8000
+chunks = []
+start = 0
+while start < len(text):
+    end = start + CHUNK_SIZE
+    if end >= len(text):
+        chunks.append(text[start:])
+        break
+    boundary = max(
+        text.rfind('. ', start, end),
+        text.rfind('? ', start, end),
+        text.rfind('! ', start, end),
+    )
+    if boundary <= start:
+        boundary = text.rfind(' ', start, end)
+    if boundary <= start:
+        boundary = end
+    else:
+        boundary += 1
+    chunks.append(text[start:boundary].strip())
+    start = boundary
+
+# Save chunks
+for i, chunk in enumerate(chunks):
+    with open(os.path.join(CHUNK_DIR, f'chunk_{i+1:02d}.txt'), 'w') as f:
+        f.write(chunk)
+
+print(json.dumps({"chunks": len(chunks), "total_chars": len(text)}))
+PYEOF
+```
+
+---
+
+### 4. Format each chunk into structured prose
+
+After cleaning, process each chunk to add paragraph breaks and speaker labels. Do this in a loop — **never process all chunks in one pass** (context overflow risk):
+
+```bash
+CHUNK_DIR=/tmp/transcript_chunks
+> "$CHUNK_DIR/formatted_output.txt"
+
+for chunk_file in "$CHUNK_DIR"/chunk_*.txt; do
+    chunk=$(cat "$chunk_file")
+    # Read the chunk text and format it:
+    # - Break into logical paragraphs (3–6 sentences each) at topic/speaker shifts
+    # - Prefix speaker turns with **Speaker:** in bold when identifiable
+    # - Keep [Applause], [Music] markers on their own line
+    # - Preserve ALL words verbatim — no summarizing, no omissions, no corrections
+    # - Filler words (uh, um, you know) must be kept
+    # Then append to formatted_output.txt with a trailing blank line
+    echo "" >> "$CHUNK_DIR/formatted_output.txt"
+done
+```
+
+**You (the agent) perform the formatting mentally for each chunk — read it, then write the formatted version to `formatted_output.txt` using a heredoc or `tee -a`.**
+
+---
+
+### 5. Assemble final file
+
+```bash
+CHUNK_DIR=/tmp/transcript_chunks
+OUT="/workspace/extra/obsidian/MnemClaw/youtube/<slug>.md"
+
+# Combine: frontmatter (already written) + blank line + formatted body + footer
+cat "$CHUNK_DIR/formatted_output.txt" >> "$OUT"
+# Then append the JTAG footer block
 ```
 
 ---
@@ -217,9 +287,13 @@ Key Components: <main topics or themes covered in the video>
 
 ## Rules
 
-- Save to `/workspace/extra/obsidian/youtube/` — never to PDF Transcripts or elsewhere
+- Save to `/workspace/extra/obsidian/MnemClaw/youtube/` — never to PDF Transcripts or elsewhere
 - Always include `author` (channel name) and `video_id` in YAML
 - If no transcript is available (private video, captions disabled), write the note anyway with `transcription-method: unavailable` and the video metadata
 - For non-English videos: include `language:` field in YAML; do not translate
 - Slug: kebab-case from title, max 60 chars, e.g. `how-transformers-work-andrej-karpathy.md`
-- For very long videos (2h+), the transcript may be large — write it in full, do not truncate
+- **Always chunk** — even short videos. Split cleaned text into ~8 KB chunks and format each one separately. Never paste the full raw transcript into your context in one shot.
+- **No summarizing** — every word from the source must appear in the output. Paragraph breaks and speaker labels are the only additions.
+- **Speaker labels** — infer from context when possible (**Name:**). Use **Speaker:** when unknown. Omit if the video has only one speaker.
+- **Filler words** — keep all uh, um, you know, etc. This is a verbatim transcript.
+- For very long videos (2h+), expect 10–15 chunks. Process sequentially.
