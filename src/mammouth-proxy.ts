@@ -48,6 +48,115 @@ function getConfig(): { host: string; key: string; model: string; openai: boolea
   return { host: MAMMOUTH_HOST, key: MAMMOUTH_KEY, model: MAMMOUTH_MODEL, openai: false };
 }
 
+// ──────────────────────────────────────────────────────────────
+// Mammouth response helpers: strip thinking blocks
+//
+// Mammouth (kimi-k2.5) returns thinking blocks with signature: null.
+// If those get stored in session history and replayed to the Anthropic API,
+// it rejects them with a 400 (signature must be a valid string).
+// Strip all thinking blocks before forwarding to the SDK.
+// ──────────────────────────────────────────────────────────────
+
+function mammouthStripThinkingNonStream(
+  upstream: import('http').IncomingMessage,
+  res: import('http').ServerResponse,
+): void {
+  const chunks: Buffer[] = [];
+  upstream.on('data', (c: Buffer) => chunks.push(c));
+  upstream.on('end', () => {
+    const raw = Buffer.concat(chunks).toString('utf-8');
+    try {
+      const obj = JSON.parse(raw) as Record<string, unknown>;
+      if (Array.isArray(obj['content'])) {
+        obj['content'] = (obj['content'] as Array<Record<string, unknown>>).filter(
+          (b) => b['type'] !== 'thinking',
+        );
+      }
+      const out = JSON.stringify(obj);
+      res.writeHead(upstream.statusCode ?? 200, {
+        'content-type': 'application/json',
+        'content-length': String(Buffer.byteLength(out)),
+      });
+      res.end(out);
+    } catch {
+      res.writeHead(upstream.statusCode ?? 200, { 'content-type': 'application/json' });
+      res.end(raw);
+    }
+  });
+  upstream.on('error', () => { if (!res.writableEnded) res.end(); });
+}
+
+function mammouthStripThinkingStream(
+  upstream: import('http').IncomingMessage,
+  res: import('http').ServerResponse,
+): void {
+  res.setHeader('content-type', 'text/event-stream; charset=utf-8');
+  res.setHeader('cache-control', 'no-cache');
+  res.flushHeaders();
+
+  const thinkingIndices = new Set<number>();
+  let dropped = 0;
+  const indexMap = new Map<number, number>();
+  let buf = '';
+  let pendingEvent = '';
+
+  const emit = (event: string, data: string): void => {
+    res.write(`event: ${event}\ndata: ${data}\n\n`);
+  };
+
+  const processData = (event: string, data: string): void => {
+    let parsed: Record<string, unknown>;
+    try { parsed = JSON.parse(data) as Record<string, unknown>; }
+    catch { emit(event, data); return; }
+
+    const type = parsed['type'] as string | undefined;
+
+    if (type === 'content_block_start') {
+      const idx = parsed['index'] as number;
+      const block = parsed['content_block'] as Record<string, unknown> | undefined;
+      if (block?.['type'] === 'thinking') {
+        thinkingIndices.add(idx);
+        dropped++;
+        return; // suppress
+      }
+      const newIdx = idx - dropped;
+      indexMap.set(idx, newIdx);
+      emit(event, JSON.stringify({ ...parsed, index: newIdx }));
+      return;
+    }
+
+    if (type === 'content_block_delta' || type === 'content_block_stop') {
+      const idx = parsed['index'] as number;
+      if (thinkingIndices.has(idx)) return; // suppress
+      const newIdx = indexMap.get(idx) ?? (idx - dropped);
+      emit(event, JSON.stringify({ ...parsed, index: newIdx }));
+      return;
+    }
+
+    // Pass through everything else (message_start, ping, message_delta, message_stop)
+    emit(event, data);
+  };
+
+  upstream.on('data', (chunk: Buffer) => {
+    buf += chunk.toString('utf-8');
+    const lines = buf.split('\n');
+    buf = lines.pop() ?? '';
+    for (const line of lines) {
+      if (line.startsWith('event: ')) {
+        pendingEvent = line.slice(7).trimEnd();
+      } else if (line.startsWith('data: ') && pendingEvent) {
+        processData(pendingEvent, line.slice(6).trimEnd());
+        pendingEvent = '';
+      } else if (line.trimEnd() === '') {
+        pendingEvent = '';
+      }
+    }
+  });
+
+  upstream.on('error', () => { if (!res.writableEnded) res.end(); });
+  upstream.on('end', () => { if (!res.writableEnded) res.end(); });
+}
+
 export function startMammouthProxy(): http.Server | null {
   const cfg = getConfig();
 
@@ -121,8 +230,16 @@ export function startMammouthProxy(): http.Server | null {
                 res.end(Buffer.concat(chunks));
               }
             });
+          } else if (isMessages && !cfg.openai) {
+            // Mammouth (Anthropic-compatible): strip thinking blocks so null-signature
+            // thinking blocks never get stored in session history.
+            if (isStreaming) {
+              mammouthStripThinkingStream(proxyRes, res);
+            } else {
+              mammouthStripThinkingNonStream(proxyRes, res);
+            }
           } else {
-            // Mammouth or non-messages: pipe through unchanged
+            // Non-messages endpoints: pipe through unchanged
             const resHeaders: Record<string, string | string[]> = {};
             for (const [k, v] of Object.entries(proxyRes.headers)) {
               if (v !== undefined) resHeaders[k] = v;
