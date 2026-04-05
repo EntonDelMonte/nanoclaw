@@ -167,33 +167,27 @@ function buildVolumeMounts(
     );
   }
 
-  // Inject API keys from host process.env into each group's settings.json.
-  // Sourced from .env (single source of truth) — never hardcoded in settings files.
-  // ANTHROPIC_BASE_URL + ANTHROPIC_API_KEY: set both to switch containers off Claude
-  // and onto a compatible provider (e.g. Mammouth). They override OneCLI's injection
-  // because settings.json env is merged into the Claude Code process env at startup.
+  // Sync API keys from .env into each group's settings.json.
+  // .env is the single source of truth — keys removed from .env are also removed
+  // from settings.json so stale values never persist across restarts.
   const HOST_ENV_KEYS = ['MAMMOUTH_API_KEY', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_API_KEY'];
-  const hostEnvToInject = HOST_ENV_KEYS.reduce<Record<string, string>>(
-    (acc, key) => {
-      const val = getProviderEnv(key);
-      if (val) acc[key] = val;
-      return acc;
-    },
-    {},
-  );
-  const defaultModel = getProviderEnv('CLAUDE_DEFAULT_MODEL');
-  if (Object.keys(hostEnvToInject).length > 0 || defaultModel) {
-    const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
-    if (Object.keys(hostEnvToInject).length > 0) {
-      settings.env = { ...settings.env, ...hostEnvToInject };
-    }
-    // CLAUDE_DEFAULT_MODEL: overrides the model used by the Claude Code SDK shell.
-    // Set to e.g. "kimi-k2.5" to use a Mammouth model instead of claude-sonnet-4-6.
-    if (defaultModel) {
-      settings.model = defaultModel;
-    }
-    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
+  const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
+  // Remove all owned keys first, then re-add only what's currently in .env
+  for (const key of HOST_ENV_KEYS) {
+    delete settings.env[key];
   }
+  for (const key of HOST_ENV_KEYS) {
+    const val = getProviderEnv(key);
+    if (val) settings.env[key] = val;
+  }
+  // CLAUDE_DEFAULT_MODEL: remove if absent, apply if set
+  const defaultModel = getProviderEnv('CLAUDE_DEFAULT_MODEL');
+  if (defaultModel) {
+    settings.model = defaultModel;
+  } else {
+    delete settings.model;
+  }
+  fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
 
   // Sync skills from container/skills/ into each group's .claude/skills/
   const skillsSrc = path.join(process.cwd(), 'container', 'skills');

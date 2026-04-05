@@ -137,9 +137,9 @@ export function openAIToAnthropic(openai: Record<string, unknown>, model: string
   const msg = choice['message'] as Record<string, unknown>;
   const content: unknown[] = [];
 
-  // Ollama kimi-k2.5 returns thinking tokens in a non-standard `reasoning` field
-  const reasoning = (msg['reasoning'] || msg['reasoning_content']) as string | undefined;
-  if (reasoning) content.push({ type: 'thinking', thinking: reasoning, signature: null });
+  // Note: kimi-k2.5 returns reasoning tokens in `reasoning`/`reasoning_content` —
+  // these are dropped intentionally. Fake thinking blocks with null signatures get
+  // stored in session history and are rejected by the Anthropic API on replay.
 
   if (msg['content']) content.push({ type: 'text', text: msg['content'] });
 
@@ -228,27 +228,12 @@ export function translateStream(
     const delta = choice['delta'] as Record<string, unknown> | undefined;
     if (!delta) return;
 
-    // Ollama kimi-k2.5: reasoning tokens arrive in `reasoning` or `reasoning_content`
-    const reasoningDelta = (delta['reasoning'] || delta['reasoning_content']) as string | null | undefined;
-    if (reasoningDelta) {
-      if (!openedBlocks.has(0)) {
-        send('content_block_start', {
-          type: 'content_block_start', index: 0,
-          content_block: { type: 'thinking', thinking: '' },
-        });
-        openedBlocks.add(0);
-        nextIndex = Math.max(nextIndex, 1);
-      }
-      send('content_block_delta', {
-        type: 'content_block_delta', index: 0,
-        delta: { type: 'thinking_delta', thinking: reasoningDelta },
-      });
-    }
+    // kimi-k2.5 reasoning tokens (`reasoning`/`reasoning_content`) are dropped —
+    // fake thinking blocks get stored in session history and rejected by Anthropic on replay.
 
     const textContent = delta['content'] as string | null | undefined;
     if (textContent) {
-      // Text block comes after reasoning block (index 1 if reasoning opened, else 0)
-      const textBlockIdx = openedBlocks.has(0) ? 1 : 0;
+      const textBlockIdx = 0;
       if (!openedBlocks.has(textBlockIdx)) {
         send('content_block_start', {
           type: 'content_block_start', index: textBlockIdx,
@@ -269,7 +254,7 @@ export function translateStream(
       const tcIdx = tc['index'] as number;
       if (!toolIndexToBlock.has(tcIdx)) {
         // Close any open text block before opening a tool_use block
-        const textBlockIdx = openedBlocks.has(0) ? 1 : 0;
+        const textBlockIdx = 0;
         if (openedBlocks.has(textBlockIdx)) {
           send('content_block_stop', { type: 'content_block_stop', index: textBlockIdx });
           openedBlocks.delete(textBlockIdx);

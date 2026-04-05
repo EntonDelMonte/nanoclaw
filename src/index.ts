@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { spawnSync } from 'child_process';
 
 import { OneCLI } from '@onecli-sh/sdk';
 
@@ -570,7 +571,26 @@ function ensureContainerSystemRunning(): void {
   cleanupOrphans();
 }
 
+function ensureOneCLIRunning(): void {
+  const composeDir = path.join(process.env.HOME ?? '', '.onecli');
+  if (!fs.existsSync(path.join(composeDir, 'docker-compose.yml'))) {
+    logger.warn({ composeDir }, 'OneCLI docker-compose.yml not found — skipping startup');
+    return;
+  }
+  const result = spawnSync('docker', ['compose', 'up', '-d'], {
+    cwd: composeDir,
+    stdio: 'pipe',
+    encoding: 'utf-8',
+  });
+  if (result.status === 0) {
+    logger.info({ composeDir }, 'OneCLI started');
+  } else {
+    logger.warn({ composeDir, stderr: result.stderr }, 'OneCLI docker compose up failed');
+  }
+}
+
 async function main(): Promise<void> {
+  ensureOneCLIRunning();
   startMammouthProxy();
   ensureContainerSystemRunning();
   initDatabase();
