@@ -1,6 +1,6 @@
 ---
 name: youtube-transcriber
-description: Fetch transcripts from YouTube videos (any length) and archive as Markdown in the Obsidian vault under "youtube/". Works with auto-generated and manual captions. No API key needed.
+description: Fetch transcripts from YouTube videos (any length) and archive as Markdown in the Obsidian vault under "youtube/". Fetches existing captions when available; falls back to local whisper transcription for audio-only videos. No API key needed.
 allowed-tools: Bash
 ---
 
@@ -16,7 +16,44 @@ Works with:
 
 ---
 
+## Transcribe Audio-Only Videos (No Captions)
+
+When yt-dlp returns no transcript file, download audio and transcribe via local whisper:
+
+```bash
+WHISPER_URL="${WHISPER_URL:-http://host.docker.internal:9090}"
+
+# Download audio only
+yt-dlp \
+  --extract-audio \
+  --audio-format mp3 \
+  --audio-quality 4 \
+  --output "$WORK_DIR/audio.%(ext)s" \
+  --no-playlist \
+  "$VIDEO_URL" 2>&1
+
+# Transcribe via whisper
+curl -s "$WHISPER_URL/inference" \
+  -F file="@$WORK_DIR/audio.mp3" \
+  -F response_format="json" \
+  | python3 -c "
+import sys, json
+try:
+    result = json.load(sys.stdin)
+    print(result.get('text', '').strip())
+except:
+    print('WHISPER_FAILED', file=sys.stderr)
+    sys.exit(1)
+"
+```
+
+**Note**: Add `transcription-source: whisper` to YAML header when using this method.
+
+---
+
 ## Workflow
+
+### Path A: Existing Captions Available
 
 ### 1. Download subtitles (no video download)
 
@@ -54,6 +91,38 @@ print('DESCRIPTION:', (d.get('description') or '')[:300].replace('\n',' '))
 ```
 
 ### 3. Clean the VTT into prose
+
+VTT files have timestamps and duplicate lines. Clean with Python: (see code below)
+
+If `NO_TRANSCRIPT` is returned → **switch to Path B (whisper).**
+
+---
+
+### Path B: No Captions — Whisper Transcription
+
+```bash
+# Download audio only
+yt-dlp \
+  --extract-audio \
+  --audio-format mp3 \
+  --audio-quality 4 \
+  --output "$WORK_DIR/audio.%(ext)s" \
+  --no-playlist \
+  "$VIDEO_URL" 2>&1
+
+# Transcribe via whisper
+WHISPER_URL="${WHISPER_URL:-http://host.docker.internal:9090}"
+TEXT=$(curl -s "$WHISPER_URL/inference" \
+  -F file="@$WORK_DIR/audio.mp3" \
+  -F response_format="json" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin).get('text','').strip())")
+
+# $TEXT now contains the transcript
+```
+
+---
+
+### 3. Clean the VTT into prose (Path A continuation)
 
 VTT files have timestamps and duplicate lines. Clean with Python:
 
@@ -106,7 +175,7 @@ EOF
 
 ## Output Format
 
-Save to: `/workspace/extra/obsidian/youtube/<slug-from-title>.md`
+Save to: `/workspace/extra/obsidian/MnemClaw/youtube/<slug-from-title>.md`
 
 ```markdown
 ---
@@ -117,6 +186,7 @@ video_id: "<11-char ID>"
 published: "<YYYY-MM-DD>"
 duration: "<HH:MM:SS or MM:SS>"
 extracted: "<YYYY-MM-DD>"
+transcription-source: "captions" | "whisper" | "unavailable"
 maturity: transcript
 status: archived
 tags:

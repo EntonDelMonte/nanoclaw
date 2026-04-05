@@ -61,6 +61,16 @@ status: living document — Skill Link updates on every add/change
 
 ---
 
+## Media & Utilities
+
+| Skill | Description |
+|-------|-------------|
+| `whisper` | Local voice transcription via whisper.cpp on host Mac with Metal GPU — transcribe audio files to text, no API key |
+| `youtube-transcriber` | Fetch YouTube transcripts (auto or manual) and archive to vault — *requires audio: integrate whisper for video-to-text* |
+| `pdf-transcriber` | Extract text from PDFs page by page with error correction, archive as Markdown |
+
+---
+
 ## Analytics & Market
 
 | Skill | Description |

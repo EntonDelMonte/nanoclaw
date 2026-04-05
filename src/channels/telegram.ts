@@ -1,4 +1,5 @@
 import fs from 'fs';
+import http from 'http';
 import https from 'https';
 import path from 'path';
 
@@ -35,6 +36,37 @@ function downloadFile(url: string, dest: string): Promise<void> {
         reject(err);
       });
   });
+}
+
+/**
+ * Transcribe audio using Whisper API at host.docker.internal:9090
+ * Returns the transcribed text, or null if transcription fails.
+ */
+async function transcribeWithWhisper(audioPath: string): Promise<string | null> {
+  try {
+    const form = new FormData();
+    form.append('file', new Blob([fs.readFileSync(audioPath)]), path.basename(audioPath));
+    form.append('response_format', 'json');
+
+    const response = await fetch('http://host.docker.internal:9090/inference', {
+      method: 'POST',
+      body: form,
+    });
+
+    if (!response.ok) {
+      logger.error(
+        { status: response.status },
+        'Whisper API returned error status',
+      );
+      return null;
+    }
+
+    const result = await response.json() as { text?: string };
+    return result.text?.trim() || null;
+  } catch (err) {
+    logger.error({ err }, 'Whisper transcription failed');
+    return null;
+  }
 }
 
 export async function initBotPool(tokens: string[]): Promise<void> {
@@ -386,7 +418,86 @@ export class TelegramChannel implements Channel {
       }
     });
     this.bot.on('message:video', (ctx) => storeNonText(ctx, '[Video]'));
-    this.bot.on('message:voice', (ctx) => storeNonText(ctx, '[Voice message]'));
+
+    // Transcribe voice messages using Whisper
+    this.bot.on('message:voice', async (ctx) => {
+      const chatJid = `tg:${ctx.chat.id}`;
+      const group = this.opts.registeredGroups()[chatJid];
+      if (!group) return;
+
+      const voice = ctx.message.voice;
+      if (!voice?.file_id) {
+        storeNonText(ctx, '[Voice message]');
+        return;
+      }
+
+      try {
+        // Get file info from Telegram
+        const file = await this.bot!.api.getFile(voice.file_id);
+        if (!file.file_path) {
+          storeNonText(ctx, '[Voice message]');
+          return;
+        }
+
+        // Download voice file
+        const downloadUrl = `https://api.telegram.org/file/bot${this.botToken}/${file.file_path}`;
+        const ext = path.extname(file.file_path) || '.ogg';
+        const filename = `voice_${voice.file_id}${ext}`;
+        const attachmentsDir = path.join(
+          GROUPS_DIR,
+          group.folder,
+          'attachments',
+        );
+        fs.mkdirSync(attachmentsDir, { recursive: true });
+        const localPath = path.join(attachmentsDir, filename);
+        await downloadFile(downloadUrl, localPath);
+
+        // Transcribe via Whisper
+        const transcription = await transcribeWithWhisper(localPath);
+        const caption = ctx.message.caption ? ` ${ctx.message.caption}` : '';
+        const content = transcription
+          ? `[Voice message: ${transcription}]${caption}`
+          : `[Voice message: transcription failed]${caption}`;
+
+        const timestamp = new Date(ctx.message.date * 1000).toISOString();
+        const senderName =
+          ctx.from?.first_name ||
+          ctx.from?.username ||
+          ctx.from?.id?.toString() ||
+          'Unknown';
+        const isGroup =
+          ctx.chat.type === 'group' || ctx.chat.type === 'supergroup';
+
+        this.opts.onChatMetadata(
+          chatJid,
+          timestamp,
+          undefined,
+          'telegram',
+          isGroup,
+        );
+        this.opts.onMessage(chatJid, {
+          id: ctx.message.message_id.toString(),
+          chat_jid: chatJid,
+          sender: ctx.from?.id?.toString() || '',
+          sender_name: senderName,
+          content,
+          timestamp,
+          is_from_me: false,
+        });
+
+        logger.info(
+          { chatJid, filename, transcription },
+          'Telegram voice message transcribed',
+        );
+      } catch (err) {
+        logger.error(
+          { err },
+          'Failed to transcribe voice message, falling back to placeholder',
+        );
+        storeNonText(ctx, '[Voice message: transcription failed]');
+      }
+    });
+
     this.bot.on('message:audio', (ctx) => storeNonText(ctx, '[Audio]'));
     this.bot.on('message:document', async (ctx) => {
       const doc = ctx.message.document;
