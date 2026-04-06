@@ -36,6 +36,7 @@ const onecli = new OneCLI({ url: ONECLI_URL });
 const PROVIDER_ENV_KEYS = [
   'MAMMOUTH_API_KEY', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_API_KEY',
   'CLAUDE_DEFAULT_MODEL', 'OLLAMA_API_KEY', 'FIRECRAWL_API_URL',
+  'GITHUB_TOKEN', 'RAILWAY_TOKEN', 'WHISPER_URL',
 ];
 const _dotEnv = readEnvFile(PROVIDER_ENV_KEYS);
 function getProviderEnv(key: string): string | undefined {
@@ -297,6 +298,12 @@ async function buildContainerArgs(
   if (mammouthKey) args.push('-e', `MAMMOUTH_API_KEY=${mammouthKey}`);
   const firecrawlUrl = getProviderEnv('FIRECRAWL_API_URL');
   if (firecrawlUrl) args.push('-e', `FIRECRAWL_API_URL=${firecrawlUrl}`);
+  const githubToken = getProviderEnv('GITHUB_TOKEN');
+  if (githubToken) args.push('-e', `GITHUB_TOKEN=${githubToken}`);
+  const railwayToken = getProviderEnv('RAILWAY_TOKEN');
+  if (railwayToken) args.push('-e', `RAILWAY_TOKEN=${railwayToken}`);
+  const whisperUrl = getProviderEnv('WHISPER_URL');
+  if (whisperUrl) args.push('-e', `WHISPER_URL=${whisperUrl}`);
 
   // When ANTHROPIC_BASE_URL points to a non-Anthropic provider, add that hostname
   // to no_proxy as a Docker -e flag (not settings.json) so undici reads it at
