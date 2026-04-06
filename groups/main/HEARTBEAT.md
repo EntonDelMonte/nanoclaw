@@ -17,7 +17,7 @@ agents:
   developer:
     model: qwen3-coder-plus (primary) / claude-sonnet-4-6 / qwen3:32b Ollama cloud (fallback)
     status: idle
-    last_task: trsr Treasure entity — isOnAccessibleGround, treasures table, routes, 22 tests; branch feat/treasure-entity committed locally; push + PR blocked (no GITHUB_TOKEN in container)
+    last_task: trsr treasure OSM node anchoring — replaced random PRNG with Overpass walkable-node anchoring; 21 tests; PR #10 open (feat/treasure-osm-anchoring)
 copywriter:
     model: claude-haiku
     status: idle
@@ -50,12 +50,10 @@ projects:
     blockers: ~
   - name: trsr (TSR)
     status: active
-    phase: Phase 2 in progress — Treasure entity implementation complete on feat/treasure-entity; push + PR blocked (GITHUB_TOKEN absent from container).
-    blockers: GITHUB_TOKEN not available in Lead Developer container — push + gh pr create cannot complete
+    phase: Phase 2 in progress — Treasure OSM node anchoring complete; PR #10 open (feat/treasure-osm-anchoring); awaiting merge
+    blockers: ~
 
-pending:
-  - task: push feat/treasure-entity branch and open PR for trsr Treasure entity
-    blocker: GITHUB_TOKEN not injected into Lead Developer container
+pending: ~
 
 notes: |
   2026-03-24:
