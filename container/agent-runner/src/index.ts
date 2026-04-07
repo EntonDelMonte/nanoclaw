@@ -409,7 +409,9 @@ async function runQuery(
         'TeamCreate', 'TeamDelete', 'SendMessage',
         'TodoWrite', 'ToolSearch', 'Skill',
         'NotebookEdit',
-        'mcp__nanoclaw__*'
+        'mcp__nanoclaw__*',
+        'mcp__ollama__*',
+        'mcp__linkedin__*',
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
@@ -425,6 +427,16 @@ async function runQuery(
             NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
           },
         },
+        ollama: {
+          command: 'node',
+          args: [path.join(path.dirname(mcpServerPath), 'ollama-mcp-stdio.js')],
+        },
+        ...(process.env.LINKEDIN_MCP_URL ? {
+          linkedin: {
+            type: 'sse' as const,
+            url: process.env.LINKEDIN_MCP_URL,
+          },
+        } : {}),
       },
       hooks: {
         PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],

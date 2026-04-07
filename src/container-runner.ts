@@ -305,6 +305,9 @@ async function buildContainerArgs(
   const whisperUrl = getProviderEnv('WHISPER_URL');
   if (whisperUrl) args.push('-e', `WHISPER_URL=${whisperUrl}`);
 
+  // LinkedIn MCP server — served by the companion service on the host
+  args.push('-e', 'LINKEDIN_MCP_URL=http://host.docker.internal:8080/sse');
+
   // When ANTHROPIC_BASE_URL points to a non-Anthropic provider, add that hostname
   // to no_proxy as a Docker -e flag (not settings.json) so undici reads it at
   // process startup before any HTTP clients are initialized. This prevents

@@ -64,6 +64,7 @@ import {
   loadSenderAllowlist,
   shouldDropMessage,
 } from './sender-allowlist.js';
+import { startCompanionServices, stopCompanionServices } from './companion-services.js';
 import { startSchedulerLoop } from './task-scheduler.js';
 import { Channel, NewMessage, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
@@ -591,6 +592,7 @@ function ensureOneCLIRunning(): void {
 
 async function main(): Promise<void> {
   ensureOneCLIRunning();
+  startCompanionServices();
   startMammouthProxy();
   ensureContainerSystemRunning();
   initDatabase();
@@ -610,6 +612,7 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'Shutdown signal received');
     await queue.shutdown(10000);
     for (const ch of channels) await ch.disconnect();
+    await stopCompanionServices();
     process.exit(0);
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
