@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { spawnSync } from 'child_process';
 
 import { OneCLI } from '@onecli-sh/sdk';
 
@@ -63,9 +64,11 @@ import {
   loadSenderAllowlist,
   shouldDropMessage,
 } from './sender-allowlist.js';
+import { startCompanionServices, stopCompanionServices } from './companion-services.js';
 import { startSchedulerLoop } from './task-scheduler.js';
 import { Channel, NewMessage, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
+import { startMammouthProxy } from './mammouth-proxy.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -569,7 +572,28 @@ function ensureContainerSystemRunning(): void {
   cleanupOrphans();
 }
 
+function ensureOneCLIRunning(): void {
+  const composeDir = path.join(process.env.HOME ?? '', '.onecli');
+  if (!fs.existsSync(path.join(composeDir, 'docker-compose.yml'))) {
+    logger.warn({ composeDir }, 'OneCLI docker-compose.yml not found — skipping startup');
+    return;
+  }
+  const result = spawnSync('docker', ['compose', 'up', '-d'], {
+    cwd: composeDir,
+    stdio: 'pipe',
+    encoding: 'utf-8',
+  });
+  if (result.status === 0) {
+    logger.info({ composeDir }, 'OneCLI started');
+  } else {
+    logger.warn({ composeDir, stderr: result.stderr }, 'OneCLI docker compose up failed');
+  }
+}
+
 async function main(): Promise<void> {
+  ensureOneCLIRunning();
+  startCompanionServices();
+  startMammouthProxy();
   ensureContainerSystemRunning();
   initDatabase();
   logger.info('Database initialized');
@@ -588,6 +612,7 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'Shutdown signal received');
     await queue.shutdown(10000);
     for (const ch of channels) await ch.disconnect();
+    await stopCompanionServices();
     process.exit(0);
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
