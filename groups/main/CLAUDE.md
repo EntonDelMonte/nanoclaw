@@ -183,6 +183,19 @@ Omit sections with no content. Use _idle_ for agents with no recent task.
 
 ---
 
+## Internet Personas
+
+Managed personas for social media posting, growth, and copywriting live in:
+`/workspace/extra/obsidian/MnemClaw/personas/`
+
+| File | Persona | Platforms |
+|------|---------|-----------|
+| `sophia-miller.md` | Dr. Sophia Miller — AI researcher & science communicator, Zug | LinkedIn, Twitter/X, Medium, Podcast |
+
+**When briefing the Copywriter or Growth Hacker** on any content, posting, or social media task, always include the relevant persona file path and instruct the agent to read it for tone of voice, channel guidelines, and content rules.
+
+---
+
 ## Mounted Paths
 
 | Container Path | Contents |
